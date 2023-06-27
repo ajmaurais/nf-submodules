@@ -41,12 +41,12 @@ process get_file {
 
     shell:
     '''
-    PDC_client file -o '!{file_name}' -m 'poop!{md5}' '!{url}'
+    PDC_client file -o '!{file_name}' -m '!{md5}' '!{url}'
     '''
 
     stub:
-    '''
-    touch !{file_name}
-    '''
+    """
+    touch '${file_name}'
+    """
 }
 
