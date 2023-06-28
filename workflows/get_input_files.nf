@@ -1,7 +1,7 @@
 // modules
-include { PANORAMA_GET_FASTA } from "../modules/panorama.nf"
-include { PANORAMA_GET_SPECTRAL_LIBRARY } from "../modules/panorama.nf"
-include { PANORAMA_GET_SKYLINE_TEMPLATE } from "../modules/panorama.nf"
+include { PANORAMA_GET_FILE as PANORAMA_GET_FASTA } from "../modules/panorama.nf"
+include { PANORAMA_GET_FILE as PANORAMA_GET_SPECTRAL_LIBRARY } from "../modules/panorama.nf"
+include { PANORAMA_GET_FILE as PANORAMA_GET_SKYLINE_TEMPLATE } from "../modules/panorama.nf"
 
 workflow get_input_files {
 
