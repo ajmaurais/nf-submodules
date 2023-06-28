@@ -1,6 +1,6 @@
 process MSCONVERT {
     storeDir "${params.mzml_cache_directory}/${params.msconvert.do_demultiplex}/${params.msconvert.do_simasspectra}"
-    publishDir "${params.result_dir}/msconvert", pattern: "*.mzML", failOnError: true, mode: 'copy', enabled: params.msconvert_only
+    publishDir "${params.result_dir}/msconvert", pattern: "*.mzML", failOnError: true, mode: 'copy', enabled: params.msconvert.store_mzml
     label 'process_medium'
     label 'error_retry'
     container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:latest'
