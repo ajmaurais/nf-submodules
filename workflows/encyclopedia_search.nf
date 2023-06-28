@@ -2,12 +2,15 @@
 include { ENCYCLOPEDIA_SEARCH_FILE } from "../modules/encyclopedia"
 include { ENCYCLOPEDIA_CREATE_ELIB } from "../modules/encyclopedia"
 
-workflow encyclopeda_export_elib {
+workflow encyclopedia_search {
 
     take:
         mzml_file_ch
         fasta
         dlib
+        align_between_runs
+        output_file_prefix
+        encyclopedia_params
 
     emit:
         elib
@@ -19,7 +22,7 @@ workflow encyclopeda_export_elib {
             mzml_file_ch,
             fasta,
             dlib,
-            params.encyclopedia.chromatogram.params
+            encyclopedia_params
         )
 
         // aggregate results into single elib
@@ -31,11 +34,10 @@ workflow encyclopeda_export_elib {
             ENCYCLOPEDIA_SEARCH_FILE.out.results_decoys.collect(),
             fasta,
             dlib,
-            'false',
-            'narrow',
-            params.encyclopedia.chromatogram.params 
+            align_between_runs,
+            output_file_prefix,
+            encyclopedia_params
         )
 
         elib = ENCYCLOPEDIA_CREATE_ELIB.out.elib
-
 }

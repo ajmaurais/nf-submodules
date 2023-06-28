@@ -58,7 +58,7 @@ process ENCYCLOPEDIA_CREATE_ELIB {
         path search_encyclopedia_decoys
         path fasta
         path spectra_library_file
-        val align
+        val align_between_runs
         val outputFilePrefix
         val encyclopedia_params
 
@@ -76,7 +76,7 @@ process ENCYCLOPEDIA_CREATE_ELIB {
         -libexport \\
         -o '${outputFilePrefix}-combined-results.elib' \\
         -i ./ \\
-        -a ${align} \\
+        ${align_between_runs ? '-a' : ''} \\
         -f ${fasta} \\
         -l ${spectra_library_file} \\
         -percolatorVersion /usr/local/bin/percolator \\
