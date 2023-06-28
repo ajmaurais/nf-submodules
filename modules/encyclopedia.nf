@@ -1,6 +1,6 @@
-def exec_java_command(mem) {
+def exec_java_command(mem, encyclopedia_version) {
     def xmx = "-Xmx${mem.toGiga()-1}G"
-    return "java -Djava.aws.headless=true ${xmx} -jar /usr/local/bin/encyclopedia.jar"
+    return "java -Djava.aws.headless=true ${xmx} -jar /code/encyclopedia-${encyclopedia_version}-executable.jar"
 }
 
 process ENCYCLOPEDIA_SEARCH_FILE {
@@ -13,7 +13,7 @@ process ENCYCLOPEDIA_SEARCH_FILE {
     publishDir "${params.result_dir}/encyclopedia/search-file", pattern: "*.encyclopedia.decoy.txt", failOnError: true, mode: 'copy', enabled: params.encyclopedia.save_output
     label 'process_high_constant'
     // container 'quay.io/protio/encyclopedia:2.12.30'
-    container 'mauraisa/encyclopedia:2.12.30'
+    container "mauraisa/encyclopedia:${params.encyclopedia.version}"
 
     input:
         path mzml_file
@@ -33,7 +33,7 @@ process ENCYCLOPEDIA_SEARCH_FILE {
 
     script:
     """
-    ${exec_java_command(task.memory)} \\
+    ${exec_java_command(task.memory, params.encyclopedia.version)} \\
         -numberOfThreadsUsed ${task.cpus} \\
         -i ${mzml_file} \\
         -f ${fasta} \\
@@ -48,7 +48,7 @@ process ENCYCLOPEDIA_CREATE_ELIB {
     publishDir "${params.result_dir}/encyclopedia/create-elib", failOnError: true, mode: 'copy'
     label 'process_memory_high_constant'
     // container 'quay.io/protio/encyclopedia:2.12.30'
-    container 'mauraisa/encyclopedia:2.12.30'
+    container "mauraisa/encyclopedia:${params.encyclopedia.version}"
 
     input:
         path search_elib_files
@@ -71,7 +71,7 @@ process ENCYCLOPEDIA_CREATE_ELIB {
     """
     find * -name '*\\.mzML\\.*' -exec bash -c 'mv \$0 \${0/\\.mzML/\\.dia}' {} \\;
 
-    ${exec_java_command(task.memory)} \\
+    ${exec_java_command(task.memory, params.encyclopedia.version)} \\
         -numberOfThreadsUsed ${task.cpus} \\
         -libexport \\
         -o '${outputFilePrefix}-combined-results.elib' \\
@@ -89,7 +89,8 @@ process ENCYCLOPEDIA_BLIB_TO_DLIB {
     publishDir "${params.result_dir}/encyclopedia/convert-blib", failOnError: true, mode: 'copy'
     label 'process_medium'
     label 'process_high_memory'
-    container 'quay.io/protio/encyclopedia:2.12.30'
+    // container 'quay.io/protio/encyclopedia:2.12.30'
+    container "mauraisa/encyclopedia:${params.encyclopedia.version}"
 
     input:
         path fasta
@@ -102,7 +103,7 @@ process ENCYCLOPEDIA_BLIB_TO_DLIB {
 
     script:
     """
-    ${exec_java_command(task.memory)} \\
+    ${exec_java_command(task.memory, params.encyclopedia.version)} \\
         -numberOfThreadsUsed ${task.cpus} \\
         -convert \\
         -blibToLib \\
