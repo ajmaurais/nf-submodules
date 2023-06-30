@@ -1,3 +1,4 @@
+
 process SKYLINE_ADD_LIB {
     publishDir "${params.result_dir}/skyline/add-lib", failOnError: true, mode: 'copy'
     label 'process_medium'
@@ -86,5 +87,60 @@ process SKYLINE_MERGE_RESULTS {
         --save \
         --share-zip="final.sky.zip" \
         --share-type="complete"
+    """
+}
+
+process SKYLINE_ANNOTATE_DOCUMENT {
+    publishDir "${params.result_dir}/skyline/annotated", failOnError: true, mode: 'copy'
+    label 'process_medium'
+    label 'error_retry'
+    container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.22335-b595b19'
+
+    input:
+        path skyline_zipfile
+        path annotation_csv
+
+    output:
+        path("final.sky.zip"), emit: final_skyline_zipfile
+        path("skyline-annotate.log"), emit: log
+
+    script:
+    """
+    unzip "${skyline_zipfile}"
+
+    wine SkylineCmd --in="${skyline_zipfile.basename}"
+        --log-file=skyline-annotate.log \
+        --out="final_annotated.sky" \
+        --import-annotations="${annotation_csv}" --save \
+        --share-zip="final_annotated.sky.zip"
+    """
+}
+
+process SKYLINE_EXPORT_REPORT {
+    publishDir "${params.result_dir}/skyline/reports", failOnError: true, mode: 'copy'
+    label 'process_medium'
+    label 'error_retry'
+    container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.22335-b595b19'
+
+    input:
+        path skyline_zipfile
+        path report_template
+
+    output:
+        path("${report_name}.tsv"), emit: report
+        path("skyline-annotate.log"), emit: log
+
+    script:
+    report_name = report_template.basename
+    """
+    # unzip skyline input file
+    unzip "${skyline_zipfile}"
+    # unzip "${skyline_zipfile}"| grep 'inflating'| sed -E 's/\s?inflating:\s?//' > archive_files.txt
+
+    wine SkylineCmd --in="${skyline_zipfile.basename}"
+        --log-file=skyline-export-report.log \
+        --report-add="${report_template}" \
+        --report-conflict-resolution="overwrite" --report-format="tsv" --report-invariant \
+        --report-name="${report_name}" --report-file="${report_name}.tsv"
     """
 }
