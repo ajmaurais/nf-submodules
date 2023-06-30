@@ -1,5 +1,5 @@
 
-process get_study_id {
+process GET_STUDY_ID {
     container 'mauraisa/pdc_client:latest'
 
     input:
@@ -14,7 +14,7 @@ process get_study_id {
     '''
 }
 
-process get_study_metadata {
+process GET_STUDY_METADATA {
     container 'mauraisa/pdc_client:latest'
     
     input:
@@ -30,7 +30,7 @@ process get_study_metadata {
     '''
 }
 
-process get_file {
+process GET_FILE {
     container 'mauraisa/pdc_client:latest'
     
     input:
