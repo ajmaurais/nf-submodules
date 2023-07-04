@@ -117,7 +117,7 @@ process PANORAMA_UPLOAD_FILE {
     container 'quay.io/protio/panorama-client:1.0.0'
 
     input:
-        val weg_dav_dir_url
+        val web_dav_dir_url
         path file_to_upload
 
     output:
