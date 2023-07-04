@@ -108,7 +108,7 @@ process SKYLINE_ANNOTATE_DOCUMENT {
     """
     unzip "${skyline_zipfile}"
 
-    wine SkylineCmd --in="${skyline_zipfile.basename}"
+    wine SkylineCmd --in="${skyline_zipfile.baseName}" \
         --log-file=skyline-annotate.log \
         --out="final_annotated.sky" \
         --import-annotations="${annotation_csv}" --save \
@@ -128,19 +128,20 @@ process SKYLINE_EXPORT_REPORT {
 
     output:
         path("${report_name}.tsv"), emit: report
-        path("skyline-annotate.log"), emit: log
+        path("skyline-export-report.log"), emit: log
 
     script:
-    report_name = report_template.basename
+    report_name = report_template.baseName
     """
     # unzip skyline input file
     unzip "${skyline_zipfile}"
     # unzip "${skyline_zipfile}"| grep 'inflating'| sed -E 's/\s?inflating:\s?//' > archive_files.txt
 
-    wine SkylineCmd --in="${skyline_zipfile.basename}"
+    wine SkylineCmd --in="${skyline_zipfile.baseName}" \
         --log-file=skyline-export-report.log \
         --report-add="${report_template}" \
         --report-conflict-resolution="overwrite" --report-format="tsv" --report-invariant \
         --report-name="${report_name}" --report-file="${report_name}.tsv"
     """
 }
+
