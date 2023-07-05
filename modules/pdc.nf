@@ -11,11 +11,12 @@ process GET_STUDY_ID {
 
     shell:
     '''
-    PDC_client studyID !{pdc_study_id}
+    PDC_client studyID !{pdc_study_id} |tee study_id.txt
     '''
 }
 
 process GET_STUDY_METADATA {
+    publishDir "${params.result_dir}/pdc/study_metadata", pattern: "study_metadata_*", failOnError: true, mode: 'copy'
     label 'process_low_constant'
     container 'mauraisa/pdc_client:0.8'
     

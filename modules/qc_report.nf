@@ -1,6 +1,9 @@
 
 process GENERATE_DIA_QC_REPORT_DB {
-    publishDir "${params.result_dir}/skyline/qc_report", failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/qc_report", pattern: '*.db3', failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/qc_report", pattern: '*.qmd', failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/qc_report", pattern: '*.stdout', failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/qc_report", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_medium'
     label 'error_retry'
     container 'mauraisa/dia_qc_report:0.2'
@@ -18,14 +21,19 @@ process GENERATE_DIA_QC_REPORT_DB {
     script:
         standard_proteins_args = "--addStdProtein ${(standard_proteins as List).collect{it}.join(' --addStdProtein ')}"
         """
-        parse_data --ofname qc_report_data.db3 '${replicate_report}' '${precursor_report}'
+        parse_data --ofname qc_report_data.db3 '${replicate_report}' '${precursor_report}' \
+            1>"parse_data.stdout" 2>"parse_data.stderr"
 
-        make_qmd ${standard_proteins_args} --title '${qc_report_title}' qc_report_data.db3
+        make_qmd ${standard_proteins_args} --title '${qc_report_title}' qc_report_data.db3 \
+            1>"make_qmd.stdout" 2>"make_qmd.stderr"
         """
 }
 
 process RENDER_QC_REPORT {
-    publishDir "${params.result_dir}/skyline/qc_report", failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/qc_report", pattern: '*.pdf', failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/qc_report", pattern: '*.html', failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/qc_report", pattern: '*.stdout', failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/qc_report", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_medium'
     label 'error_retry'
     container 'mauraisa/dia_qc_report:0.2'
@@ -41,6 +49,8 @@ process RENDER_QC_REPORT {
     script:
         format = report_format
         """
-        quarto render qc_report.qmd --to '${format}'
+        quarto render qc_report.qmd --to '${format}' \
+            1>"render_${report_format}_report.stdout" 2>"render_${report_format}_report.stderr"
         """
 }
+
