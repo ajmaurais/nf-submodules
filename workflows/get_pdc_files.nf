@@ -29,6 +29,7 @@ workflow get_pdc_files {
                   params.msconvert.do_simasspectra)
 
     emit:
+        metadata = get_pdc_study_metadata.out.metadata
         annotations_csv = get_pdc_study_metadata.out.annotations_csv
         wide_mzml_ch = MSCONVERT.out.mzml_file
 }
