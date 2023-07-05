@@ -3,7 +3,7 @@ process GENERATE_DIA_QC_REPORT_DB {
     publishDir "${params.result_dir}/skyline/qc_report", failOnError: true, mode: 'copy'
     label 'process_medium'
     label 'error_retry'
-    container 'mauraisa/dia_qc_report:0.1'
+    container 'mauraisa/dia_qc_report:0.2'
     
     input:
         path replicate_report
@@ -20,7 +20,7 @@ process GENERATE_DIA_QC_REPORT_DB {
         """
         parse_data --ofname qc_report_data.db3 '${replicate_report}' '${precursor_report}'
 
-        make_qmd --title '${qc_report_title}' qc_report_data.db3
+        make_qmd ${standard_proteins_args} --title '${qc_report_title}' qc_report_data.db3
         """
 }
 
@@ -28,7 +28,7 @@ process RENDER_QC_REPORT {
     publishDir "${params.result_dir}/skyline/qc_report", failOnError: true, mode: 'copy'
     label 'process_medium'
     label 'error_retry'
-    container 'mauraisa/dia_qc_report:0.1'
+    container 'mauraisa/dia_qc_report:0.2'
     
     input:
         path qmd

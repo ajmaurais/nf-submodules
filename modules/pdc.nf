@@ -1,7 +1,7 @@
 
 process GET_STUDY_ID {
     label 'process_low_constant'
-    container 'mauraisa/pdc_client:0.7'
+    container 'mauraisa/pdc_client:0.8'
 
     input:
         val pdc_study_id
@@ -17,7 +17,7 @@ process GET_STUDY_ID {
 
 process GET_STUDY_METADATA {
     label 'process_low_constant'
-    container 'mauraisa/pdc_client:0.7'
+    container 'mauraisa/pdc_client:0.8'
     
     input:
         val pdc_study_id
@@ -35,7 +35,7 @@ process GET_STUDY_METADATA {
 
 process GET_FILE {
     label 'process_low_constant'
-    container 'mauraisa/pdc_client:0.7'
+    container 'mauraisa/pdc_client:0.8'
     storeDir "${params.panorama_cache_directory}"
     
     input:
