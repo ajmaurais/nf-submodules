@@ -14,6 +14,7 @@ workflow encyclopedia_search {
 
     emit:
         elib
+        search_files
 
     main:
 
@@ -23,6 +24,13 @@ workflow encyclopedia_search {
             fasta,
             dlib,
             encyclopedia_params
+        )
+
+        search_files = ENCYCLOPEDIA_SEARCH_FILE.out.elib.concat(
+            ENCYCLOPEDIA_SEARCH_FILE.out.dia,
+            ENCYCLOPEDIA_SEARCH_FILE.out.features,
+            ENCYCLOPEDIA_SEARCH_FILE.out.results_targets,
+            ENCYCLOPEDIA_SEARCH_FILE.out.results_decoys
         )
 
         // aggregate results into single elib

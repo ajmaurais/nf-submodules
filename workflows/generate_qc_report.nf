@@ -12,6 +12,8 @@ workflow generate_dia_qc_report {
 
     emit:
         qc_reports
+        qc_report_qmd
+        qc_report_db
     
     main:
         export_replicate_report(final_skyline_zip, params.qc_report.replicate_report_template) 
@@ -21,6 +23,9 @@ workflow generate_dia_qc_report {
                                   export_precursor_report.out.report,
                                   params.qc_report.standard_proteins,
                                   qc_report_title)
+
+        qc_report_qmd = GENERATE_DIA_QC_REPORT_DB.out.qc_report_qmd
+        qc_report_db = GENERATE_DIA_QC_REPORT_DB.out.qc_report_db
 
         report_formats = Channel.from(['html', 'pdf'])
         RENDER_QC_REPORT(GENERATE_DIA_QC_REPORT_DB.out.qc_report_qmd,
