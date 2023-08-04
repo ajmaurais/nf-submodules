@@ -1,7 +1,7 @@
 
 process UPLOAD_FILE {
     label 'process_low_constant'
-    container 'mauraisa/s3_client:0.1'
+    container 'mauraisa/s3_client:0.2'
 
     input:
         val bucket_name
