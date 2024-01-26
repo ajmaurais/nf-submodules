@@ -1,11 +1,23 @@
 
+def format_flag(var, flag) {
+    ret = (var == null ? "" : "${flag} ${var}")
+    return ret
+}
+
+def format_flags(vars, flag) {
+    if(vars instanceof List) {
+        return (vars == null ? "" : "${flag} \'${vars.join('\' ' + flag + ' \'')}\'")
+    }
+    return format_flag(vars, flag)
+}
+
 process GENERATE_DIA_QC_REPORT_DB {
     publishDir "${params.result_dir}/qc_report", pattern: '*.db3', failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/qc_report", pattern: '*.qmd', failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/qc_report", pattern: '*.stdout', failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/qc_report", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.1'
+    container 'mauraisa/dia_qc_report:1.2'
 
     input:
         path replicate_report
@@ -24,7 +36,7 @@ process GENERATE_DIA_QC_REPORT_DB {
             > >(tee "parse_data.stdout") 2> >(tee "parse_data.stderr")
 
         generate_qc_qmd ${standard_proteins_args} --title '${qc_report_title}' qc_report_data.db3 \
-            > >(tee "make_qmd.stdout") 2> >(tee "make_qmd.stderr")
+            > >(tee "make_qmd.stdout") 2> >(tee "make_qmd.stderr" >&2)
         """
 }
 
@@ -33,7 +45,7 @@ process RENDER_QC_REPORT {
     publishDir "${params.result_dir}/qc_report", pattern: '*.stdout', failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/qc_report", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.1'
+    container 'mauraisa/dia_qc_report:1.2'
 
     input:
         path qmd
@@ -47,7 +59,7 @@ process RENDER_QC_REPORT {
         format = report_format
         """
         quarto render qc_report.qmd --to '${format}' \
-            > >(tee "render_${report_format}_report.stdout") 2> >(tee "render_${report_format}_report.stderr")
+            > >(tee "render_${report_format}_report.stdout") 2> >(tee "render_${report_format}_report.stderr" >&2)
         """
 
     stub:
@@ -58,11 +70,11 @@ process RENDER_QC_REPORT {
 
 
 process NORMALIZE_DB {
-    publishDir "${params.result_dir}/batch_report/normzlize_db", failOnError: true, mode: 'copy'
-    publishDir "${params.result_dir}/batch_report/normalzie_db", pattern: '*.stdout', failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/batch_report/normalize_db", failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/batch_report/normalize_db", pattern: '*.stdout', failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/batch_report/normalize_db", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.1'
+    container 'mauraisa/dia_qc_report:1.2'
 
     input:
         path batch_db
@@ -77,7 +89,7 @@ process NORMALIZE_DB {
         cp -v ${batch_db} "normalized_${batch_db.baseName}.db3"
 
         normalize_db "normalized_${batch_db.baseName}.db3" \
-            > >(tee -a "normalize_db.stdout") 2> >(tee -a "normalize_db.stderr")
+            > >(tee "normalize_db.stdout") 2> >(tee "normalize_db.stderr" >&2)
         """
 
     stub:
@@ -86,13 +98,12 @@ process NORMALIZE_DB {
         """
 }
 
-
 process GENERATE_BATCH_RMD {
     publishDir "${params.result_dir}/batch_report/rmd", failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/batch_report/rmd", pattern: '*.stdout', failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/batch_report/rmd", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_low'
-    container 'mauraisa/dia_qc_report:1.1'
+    container 'mauraisa/dia_qc_report:1.2'
 
     input:
         path normalized_db
@@ -102,8 +113,18 @@ process GENERATE_BATCH_RMD {
 
     script:
         """
-        generate_batch_rmd ${normalized_db} \
-            > >(tee -a "generate_batch_rmd.stdout") 2> >(tee -a "genrate_batch_rmd.stderr")
+        generate_batch_rmd \
+            ${format_flag(params.bc.method, "--bcMethod")} \
+            ${format_flag(params.bc.batch1, "--batch1")} \
+            ${format_flag(params.bc.batch2, "--batch2")} \
+            ${format_flags(params.bc.color_vars, "--addColor")} \
+            ${format_flag(params.bc.control_key, "--controlKey")} \
+            ${format_flags(params.bc.control_values, "--addControlValue")} \
+            ${format_flags(params.bc.covariate_vars, "--addCovariate")} \
+            ${format_flag(params.bc.plot_ext, "--savePlots")} \
+            --precursorTables 70 --proteinTables 70 \
+            ${normalized_db} \
+        > >(tee "generate_batch_rmd.stdout") 2> >(tee "generate_batch_rmd.stderr" >&2)
         """
 
     stub:
@@ -115,10 +136,11 @@ process GENERATE_BATCH_RMD {
 
 process RENDER_BATCH_RMD {
     publishDir "${params.result_dir}/batch_report/rmd", failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/batch_report/rmd/tables", pattern: '*.tsv', failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/batch_report/rmd", pattern: '*.stdout', failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/batch_report/rmd", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.1'
+    container 'mauraisa/dia_qc_report:1.2'
 
     input:
         path batch_rmd
@@ -127,11 +149,13 @@ process RENDER_BATCH_RMD {
     output:
         path("bc_report.html"), emit: bc_html
         path("*.tsv"), emit: tsv_reports, optional: true
+        path("plots/*"), emit: bc_plots
 
     script:
         """
-        Rscript -e "rmarkdown::render('${batch_rmd}')"
-            > >(tee -a "render_batch_rmd.stdout") 2> >(tee -a "render_batch_rmd.stderr")
+        mkdir plots
+        Rscript -e "rmarkdown::render('${batch_rmd}')" \
+            > >(tee -a "render_batch_rmd.stdout") 2> >(tee -a "render_batch_rmd.stderr" >&2)
         """
 
     stub:
@@ -142,9 +166,9 @@ process RENDER_BATCH_RMD {
 
 
 process MERGE_REPORTS {
-    publishDir "${params.result_dir}/batch_report", failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/batch_report/merge_reports", failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.1'
+    container 'mauraisa/dia_qc_report:1.2'
 
     input:
         val study_names
@@ -170,7 +194,7 @@ process MERGE_REPORTS {
                 --metadata="${metadata_array[$i]}" \
                 "${replicate_reports_array[$i]}" \
                 "${precursor_reports_array[$i]}" \
-                > >(tee -a "parse_data.stdout") 2> >(tee -a "parse_data.stderr")
+                > >(tee -a "parse_data.stdout") 2> >(tee -a "parse_data.stderr" >&2)
 
             echo "Done!"
         done
