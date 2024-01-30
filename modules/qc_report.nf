@@ -11,32 +11,32 @@ def format_flags(vars, flag) {
     return format_flag(vars, flag)
 }
 
-process GENERATE_DIA_QC_REPORT_DB {
-    publishDir "${params.result_dir}/qc_report", pattern: '*.db3', failOnError: true, mode: 'copy'
-    publishDir "${params.result_dir}/qc_report", pattern: '*.qmd', failOnError: true, mode: 'copy'
-    publishDir "${params.result_dir}/qc_report", pattern: '*.stdout', failOnError: true, mode: 'copy'
-    publishDir "${params.result_dir}/qc_report", pattern: '*.stderr', failOnError: true, mode: 'copy'
+process GENERATE_QC_QMD {
+    publishDir "${params.result_dir}/qc_report", failOnError: true, mode: 'copy'
     label 'process_high_memory'
     container 'mauraisa/dia_qc_report:1.2'
 
     input:
-        path replicate_report
-        path precursor_report
+        path qc_report_db
         val standard_proteins
         val qc_report_title
 
     output:
-        path('qc_report_data.db3'), emit: qc_report_db
         path('qc_report.qmd'), emit: qc_report_qmd
+        path("*.stdout"), emit: stdout
+        path("*.stderr"), emit: stderr
 
     script:
         standard_proteins_args = "--addStdProtein ${(standard_proteins as List).collect{it}.join(' --addStdProtein ')}"
         """
-        parse_data --ofname qc_report_data.db3 '${replicate_report}' '${precursor_report}' \
-            > >(tee "parse_data.stdout") 2> >(tee "parse_data.stderr")
-
-        generate_qc_qmd ${standard_proteins_args} --title '${qc_report_title}' qc_report_data.db3 \
+        generate_qc_qmd ${standard_proteins_args} --title '${qc_report_title}' ${qc_report_db.db3} \
             > >(tee "make_qmd.stdout") 2> >(tee "make_qmd.stderr" >&2)
+        """
+
+    stub:
+        """
+        touch qc_report.qmd
+        touch empty.stdout empty.stderr
         """
 }
 
@@ -54,6 +54,8 @@ process RENDER_QC_REPORT {
 
     output:
         path("qc_report.${format}"), emit: qc_report
+        path("*.stdout"), emit: stdout
+        path("*.stderr"), emit: stderr
 
     script:
         format = report_format
@@ -65,14 +67,13 @@ process RENDER_QC_REPORT {
     stub:
         """
         touch "qc_report.${format}"
+        touch empty.stdout empty.stderr
         """
 }
 
 
 process NORMALIZE_DB {
     publishDir "${params.result_dir}/batch_report/normalize_db", failOnError: true, mode: 'copy'
-    publishDir "${params.result_dir}/batch_report/normalize_db", pattern: '*.stdout', failOnError: true, mode: 'copy'
-    publishDir "${params.result_dir}/batch_report/normalize_db", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_high_memory'
     container 'mauraisa/dia_qc_report:1.2'
 
@@ -81,6 +82,8 @@ process NORMALIZE_DB {
 
     output:
         path("normalized_${batch_db.baseName}.db3"), emit: normalized_db
+        path("*.stdout"), emit: stdout
+        path("*.stderr"), emit: stderr
 
     script:
         """
@@ -95,13 +98,12 @@ process NORMALIZE_DB {
     stub:
         """
         touch "normalized_${batch_db.baseName}.db3"
+        touch empty.stdout empty.stderr
         """
 }
 
 process GENERATE_BATCH_RMD {
     publishDir "${params.result_dir}/batch_report/rmd", failOnError: true, mode: 'copy'
-    publishDir "${params.result_dir}/batch_report/rmd", pattern: '*.stdout', failOnError: true, mode: 'copy'
-    publishDir "${params.result_dir}/batch_report/rmd", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_low'
     container 'mauraisa/dia_qc_report:1.2'
 
@@ -110,6 +112,8 @@ process GENERATE_BATCH_RMD {
 
     output:
         path("bc_report.rmd"), emit: bc_rmd
+        path("*.stdout"), emit: stdout
+        path("*.stderr"), emit: stderr
 
     script:
         """
@@ -130,6 +134,7 @@ process GENERATE_BATCH_RMD {
     stub:
         """
         touch bc_report.rmd
+        touch empty.stdout empty.stderr
         """
 }
 
@@ -149,7 +154,9 @@ process RENDER_BATCH_RMD {
     output:
         path("bc_report.html"), emit: bc_html
         path("*.tsv"), emit: tsv_reports, optional: true
-        path("plots/*"), emit: bc_plots
+        path("plots/*"), emit: bc_plots, optional: true
+        path("*.stdout"), emit: stdout
+        path("*.stderr"), emit: stderr
 
     script:
         """
@@ -161,6 +168,7 @@ process RENDER_BATCH_RMD {
     stub:
         """
         touch bc_report.html
+        touch empty.stdout empty.stderr
         """
 }
 
@@ -178,6 +186,8 @@ process MERGE_REPORTS {
 
     output:
         path('data.db3'), emit: final_db
+        path("*.stdout"), emit: stdout
+        path("*.stderr"), emit: stderr
 
     shell:
         '''
@@ -203,6 +213,7 @@ process MERGE_REPORTS {
     stub:
         """
         touch data.db3
+        touch empty.stdout empty.stderr
         """
 }
 

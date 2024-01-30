@@ -11,7 +11,7 @@ String escapeRegex(String str) {
 
 process PANORAMA_GET_RAW_FILE_LIST {
     label 'process_low_constant'
-    container 'mriffle/panorama-client:1.0.0'
+    container 'mriffle/panorama-client:1.1.0'
     publishDir "${params.result_dir}/panorama", failOnError: true, mode: 'copy'
 
     input:
@@ -51,7 +51,7 @@ process PANORAMA_GET_RAW_FILE_LIST {
 
 process PANORAMA_GET_FILE {
     label 'process_low_constant'
-    container 'mriffle/panorama-client:1.0.0'
+    container 'mriffle/panorama-client:1.1.0'
     publishDir "${params.result_dir}/panorama", failOnError: true, mode: 'copy', pattern: "*.stdout"
     publishDir "${params.result_dir}/panorama", failOnError: true, mode: 'copy', pattern: "*.stderr"
 
@@ -71,19 +71,20 @@ process PANORAMA_GET_FILE {
             -d \
             -w "${web_dav_dir_url}" \
             -k \$PANORAMA_API_KEY \
-            1>"panorama-get-${file_name}.stdout" 2>"panorama-get-${file_name}.stderr"
+            > >(tee "panorama-get-${file_name}.stdout") 2> >(tee "panorama-get-${file_name}.stderr" >&2)
         echo "Done!" # Needed for proper exit
         """
 
     stub:
     """
-    touch "{$file(web_dav_dir_url).name}"
+    touch "${file(web_dav_dir_url).name}"
+    touch stub.stdout stub.stderr
     """
 }
 
 process PANORAMA_GET_RAW_FILE {
     label 'process_low_constant'
-    container 'quay.io/protio/panorama-client:1.0.0'
+    container 'mriffle/panorama-client:1.1.0'
     storeDir "${params.panorama_cache_directory}"
 
     input:
@@ -102,7 +103,7 @@ process PANORAMA_GET_RAW_FILE {
             -d \
             -w "${web_dav_dir_url}${raw_file_name}" \
             -k \$PANORAMA_API_KEY \
-            1>"panorama-get-${raw_file_name}.stdout" 2>"panorama-get-${raw_file_name}.stderr"
+            > >(tee "panorama-get-${raw_file_name}.stdout") 2> >(tee "panorama-get-${raw_file_name}.stderr" >&2)
         echo "Done!" # Needed for proper exit
         """
 
@@ -114,7 +115,7 @@ process PANORAMA_GET_RAW_FILE {
 
 process PANORAMA_UPLOAD_FILE {
     label 'process_low_constant'
-    container 'quay.io/protio/panorama-client:1.0.0'
+    container 'mriffle/panorama-client:1.1.0'
 
     input:
         val web_dav_dir_url
@@ -132,14 +133,14 @@ process PANORAMA_UPLOAD_FILE {
             -w "${web_dav_dir_url}" \
             -f "${file_to_upload}" \
             -k \$PANORAMA_API_KEY \
-            1>"panorama-upload-${file_name}.stdout" 2>"panorama-upload-${file_name}.stderr"
+            > >(tee "panorama-upload-${file_name}.stdout") 2> >(tee "panorama-upload-${file_name}.stderr" >&2)
         echo "Done!" # Needed for proper exit
         """
 }
 
 process PANORAMA_IMPORT_SKYLINE {
     label 'process_medium'
-    container 'quay.io/protio/panorama-client:1.0.0'
+    container 'mriffle/panorama-client:1.1.0'
     
     input:
         val panorama_folder
@@ -157,7 +158,7 @@ process PANORAMA_IMPORT_SKYLINE {
             -p "${panorama_folder}" \
             -s "${skyline_zip_to_upload}" \
             -k \$PANORAMA_API_KEY \
-            1>"panorama-import-${file_name}.stdout" 2>"panorama-import-${file_name}.stderr"
+            > >(tee "panorama-import-${file_name}.stdout") 2> >(tee "panorama-import-${file_name}.stderr" >&2)
         echo "Done!" # Needed for proper exit
         """
 }
