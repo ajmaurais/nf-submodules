@@ -91,7 +91,7 @@ process SKYLINE_MERGE_RESULTS {
 }
 
 process SKYLINE_ANNOTATE_DOCUMENT {
-    publishDir "${params.result_dir}/skyline/annotated", failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/skyline/annotated", pattern: "*.sky.zip", failOnError: true, mode: 'copy'
     label 'process_medium'
     label 'error_retry'
     container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.22335-b595b19'
@@ -102,6 +102,9 @@ process SKYLINE_ANNOTATE_DOCUMENT {
 
     output:
         path("final.sky.zip"), emit: final_skyline_zipfile
+        path("final.skyd"), emit: final_skyd_file
+        path("final.sky"), emit: final_sky_file
+        path("*.elib"), emit: final_elib
         path("skyline-annotate.log"), emit: log
 
     script:
@@ -123,7 +126,9 @@ process SKYLINE_EXPORT_REPORT {
     container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.22335-b595b19'
 
     input:
-        path skyline_zipfile
+        path sky_file
+        path skyd_file
+        path lib_file
         path report_template
 
     output:
@@ -133,11 +138,7 @@ process SKYLINE_EXPORT_REPORT {
     script:
     report_name = report_template.baseName
     """
-    # unzip skyline input file
-    unzip "${skyline_zipfile}"
-    # unzip "${skyline_zipfile}"| grep 'inflating'| sed -E 's/\s?inflating:\s?//' > archive_files.txt
-
-    wine SkylineCmd --in="${skyline_zipfile.baseName}" \
+    wine SkylineCmd --in="${sky_file}" \
         --log-file=skyline-export-report.log \
         --report-add="${report_template}" \
         --report-conflict-resolution="overwrite" --report-format="tsv" --report-invariant \

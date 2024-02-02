@@ -7,18 +7,25 @@ include { RENDER_QC_REPORT } from "../modules/qc_report.nf"
 workflow generate_dia_qc_report {
 
     take:
-        final_skyline_zip 
+        sky_file
+        skyd_file
+        sky_lib_file
         qc_report_title
 
     emit:
         qc_reports
         qc_report_qmd
         qc_report_db
-    
+
     main:
-        export_replicate_report(final_skyline_zip, params.qc_report.replicate_report_template) 
-        export_precursor_report(final_skyline_zip, params.qc_report.precursor_report_template) 
-        
+        export_replicate_report(sky_file, skyd_file, sky_lib_file,
+                                params.qc_report.replicate_report_template)
+        export_precursor_report(sky_file, skyd_file, sky_lib_file,
+                                params.qc_report.precursor_report_template)
+
+        // export_replicate_report(sky_zip_file, params.qc_report.replicate_report_template)
+        // export_precursor_report(sky_zip_file, params.qc_report.replicate_report_template)
+
         GENERATE_DIA_QC_REPORT_DB(export_replicate_report.out.report,
                                   export_precursor_report.out.report,
                                   params.qc_report.standard_proteins,
