@@ -135,6 +135,11 @@ process PANORAMA_UPLOAD_FILE {
             1>"panorama-upload-${file_name}.stdout" 2>"panorama-upload-${file_name}.stderr"
         echo "Done!" # Needed for proper exit
         """
+
+    stub:
+        """
+        touch null.stdout null.stderr
+        """
 }
 
 process PANORAMA_IMPORT_SKYLINE {
@@ -159,6 +164,11 @@ process PANORAMA_IMPORT_SKYLINE {
             -k \$PANORAMA_API_KEY \
             1>"panorama-import-${file_name}.stdout" 2>"panorama-import-${file_name}.stderr"
         echo "Done!" # Needed for proper exit
+        """
+
+    stub:
+        """
+        touch null.stdout null.stderr
         """
 }
 

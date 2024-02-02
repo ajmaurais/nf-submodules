@@ -6,7 +6,7 @@ process GENERATE_DIA_QC_REPORT_DB {
     publishDir "${params.result_dir}/qc_report", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_medium'
     label 'error_retry'
-    container 'mauraisa/dia_qc_report:0.2'
+    container 'mauraisa/dia_qc_report:0.4'
     
     input:
         path replicate_report
@@ -36,7 +36,7 @@ process RENDER_QC_REPORT {
     publishDir "${params.result_dir}/qc_report", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_medium'
     label 'error_retry'
-    container 'mauraisa/dia_qc_report:0.2'
+    container 'mauraisa/dia_qc_report:0.4'
     
     input:
         path qmd
