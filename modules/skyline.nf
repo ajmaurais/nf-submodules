@@ -151,7 +151,7 @@ process ZIP_SKY_FILE {
         val zip_archive_name
 
     output:
-        path("${zip_archive_name}.sky.zip"), emit: sky_file
+        path("${zip_archive_name}.sky.zip"), emit: sky_zip_file
         path("*.stdout"), emit: stdout
         path("*.stderr"), emit: stderr
 
@@ -185,15 +185,13 @@ process SKYLINE_ANNOTATE_DOCUMENT {
         path annotation_csv
 
     output:
-        path("final_annotated.sky"), emit: sky_file
-        path("final_annotated.skyd"), emit: skyd_file
-        path("*.[eb]lib"), emit: lib_file
+        path("final_annotated.sky.zip"), emit: sky_zip_file
         path("*.stdout"), emit: stdout
         path("*.stderr"), emit: stderr
 
     script:
     """
-    wine SkylineCmd --in="${skyline_zipfile.baseName}" \
+    wine SkylineCmd --in="${sky_file}" \
         --out="final_annotated.sky" \
         --import-annotations="${annotation_csv}" --save \
         --share-zip="final_annotated.sky.zip" \
