@@ -3,7 +3,7 @@ process GET_STUDY_ID {
     label 'process_low_constant'
     errorStrategy 'retry'
     maxRetries 2
-    container 'mauraisa/pdc_client:0.8'
+    container 'mauraisa/pdc_client:0.9'
 
     input:
         val pdc_study_id
@@ -13,17 +13,17 @@ process GET_STUDY_ID {
 
     shell:
     '''
-    PDC_client studyID --baseUrl !{params.pdc_base_url} !{pdc_study_id} |tee study_id.txt
+    PDC_client studyID !{params.pdc_client_args} !{pdc_study_id} |tee study_id.txt
     '''
 }
 
 process GET_STUDY_METADATA {
-    publishDir "${params.result_dir}/pdc/study_metadata", pattern: "study_metadata_*", failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/pdc/study_metadata", failOnError: true, mode: 'copy'
     errorStrategy 'retry'
     maxRetries 2
     label 'process_low_constant'
-    container 'mauraisa/pdc_client:0.8'
-    
+    container 'mauraisa/pdc_client:0.9'
+
     input:
         val pdc_study_id
 
@@ -34,17 +34,17 @@ process GET_STUDY_METADATA {
     shell:
     n_files_arg = params.n_raw_files == null ? "" : "--nFiles ${params.n_raw_files}"
     '''
-    PDC_client metadata --baseUrl !{params.pdc_base_url} -f tsv !{n_files_arg} --skylineAnnotations !{pdc_study_id}
+    PDC_client metadata !{params.pdc_client_args} -f tsv !{n_files_arg} --skylineAnnotations !{pdc_study_id}
     '''
 }
 
 process GET_FILE {
     label 'process_low_constant'
-    container 'mauraisa/pdc_client:0.8'
+    container 'mauraisa/pdc_client:0.9'
     errorStrategy 'retry'
     maxRetries 2
     storeDir "${params.panorama_cache_directory}"
-    
+
     input:
         tuple val(url), val(file_name), val(md5)
 
