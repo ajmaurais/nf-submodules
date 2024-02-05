@@ -1,10 +1,11 @@
 // Modules
-include {UPLOAD_MANY_FILES as UPLOAD_MZML_FILES } from "../modules/s3"
-include {UPLOAD_MANY_FILES as UPLOAD_ENCYCLOPEDIA_SEARCH_FILES } from "../modules/s3"
-include {UPLOAD_FILE as UPLOAD_QUANT_ELIB } from "../modules/s3"
-include {UPLOAD_MANY_FILES as UPLOAD_SKYD_FILE } from "../modules/s3"
-include {UPLOAD_FILE as UPLOAD_FINAL_SKYLINE_FILE } from "../modules/s3"
-include {UPLOAD_FILE as UPLOAD_QC_REPORTS } from "../modules/s3"
+include { UPLOAD_MANY_FILES as UPLOAD_MZML_FILES } from "../modules/s3"
+include { UPLOAD_MANY_FILES as UPLOAD_ENCYCLOPEDIA_SEARCH_FILES } from "../modules/s3"
+include { UPLOAD_FILE as UPLOAD_QUANT_ELIB } from "../modules/s3"
+include { UPLOAD_MANY_FILES as UPLOAD_SKYD_FILE } from "../modules/s3"
+include { UPLOAD_FILE as UPLOAD_FINAL_SKYLINE_FILE } from "../modules/s3"
+include { UPLOAD_FILE as UPLOAD_QC_REPORTS } from "../modules/s3"
+include { GET_DOCKER_INFO } from "../modules/s3"
 
 workflow s3_upload {
 
@@ -24,8 +25,13 @@ workflow s3_upload {
         // Reports
         qc_reports
 
+    emit:
+        docker_tag
+
     main:
-         
+        GET_DOCKER_INFO()
+        docker_tag = GET_DOCKER_INFO.out.docker_tag
+
         mzml_file_groups = mzml_files.collate(20)
         UPLOAD_MZML_FILES(params.s3_upload.bucket_name, params.s3_upload.access_key,
                           "/${params.pdc_study_id}/mzML/", mzml_file_groups)
