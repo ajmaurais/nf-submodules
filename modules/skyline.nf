@@ -3,6 +3,7 @@ process SKYLINE_ADD_LIB {
     publishDir "${params.result_dir}/skyline/add-lib", failOnError: true, mode: 'copy', enabled: params.skyline.save_intermediate_output
     label 'process_medium'
     label 'error_retry'
+    stageInMode 'link'
     container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24020-c3a52ef'
 
     input:
@@ -42,6 +43,7 @@ process SKYLINE_IMPORT_MZML {
     label 'process_medium'
     label 'process_high_memory'
     label 'error_retry'
+    stageInMode 'link'
     container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24020-c3a52ef'
 
     input:
@@ -56,8 +58,6 @@ process SKYLINE_IMPORT_MZML {
     script:
     """
     unzip ${skyline_zipfile}
-
-    cp ${mzml_file} /tmp/${mzml_file}
 
     wine SkylineCmd \
         --in="${skyline_zipfile.baseName}" \
@@ -77,12 +77,13 @@ process SKYLINE_MERGE_RESULTS {
     publishDir "${params.result_dir}/skyline/import-spectra", failOnError: true, mode: 'copy', enabled: params.skyline.save_intermediate_output
     label 'process_high'
     label 'error_retry'
+    stageInMode 'link'
     container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24020-c3a52ef'
 
     input:
         path skyline_zipfile
         path skyd_files
-        val mzml_files
+        path mzml_files
 
     output:
         path("final.sky.zip"), emit: final_skyline_zipfile
@@ -90,7 +91,7 @@ process SKYLINE_MERGE_RESULTS {
         path("*.stderr"), emit: stderr
 
     script:
-    import_files_params = "--import-file=${(mzml_files as List).collect{ "/tmp/" + file(it).name }.join(' --import-file=')}"
+    import_files_params = "--import-file=${(mzml_files as List).collect{ file(it).name }.join(' --import-file=')}"
     """
     unzip ${skyline_zipfile}
 
@@ -142,6 +143,7 @@ process UNZIP_SKY_FILE {
 process ZIP_SKY_FILE {
     publishDir "${params.result_dir}/skyline/zip", failOnError: true, mode: 'copy'
     label 'process_high_memory'
+    stageInMode 'link'
     container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24020-c3a52ef'
 
     input:
@@ -176,6 +178,7 @@ process SKYLINE_ANNOTATE_DOCUMENT {
     publishDir "${params.result_dir}/skyline/annotate", pattern: "*.stderr", failOnError: true, mode: 'copy'
     label 'process_medium'
     label 'error_retry'
+    stageInMode 'link'
     container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24020-c3a52ef'
 
     input:
@@ -211,6 +214,7 @@ process SKYLINE_EXPORT_REPORT {
     publishDir "${params.result_dir}/skyline/reports", failOnError: true, mode: 'copy'
     label 'process_medium'
     label 'error_retry'
+    stageInMode 'link'
     container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24020-c3a52ef'
 
     input:
