@@ -2,7 +2,7 @@
 process GET_DOCKER_INFO {
     publishDir "${params.result_dir}/pdc", failOnError: true, mode: 'copy'
     label 'process_low'
-    container 'mauraisa/dia_qc_report:1.4'
+    container 'mauraisa/pdc_client:0.11'
 
     output:
         path('docker_info.txt'), emit: info_file
@@ -26,7 +26,7 @@ process GET_STUDY_ID {
     label 'process_low_constant'
     errorStrategy 'retry'
     maxRetries 2
-    container 'mauraisa/pdc_client:0.9'
+    container 'mauraisa/pdc_client:0.11'
 
     input:
         val pdc_study_id
@@ -45,7 +45,7 @@ process GET_STUDY_METADATA {
     errorStrategy 'retry'
     maxRetries 2
     label 'process_low_constant'
-    container 'mauraisa/pdc_client:0.9'
+    container 'mauraisa/pdc_client:0.11'
 
     input:
         val pdc_study_id
@@ -63,7 +63,7 @@ process GET_STUDY_METADATA {
 
 process GET_FILE {
     label 'process_low_constant'
-    container 'mauraisa/pdc_client:0.9'
+    container 'mauraisa/pdc_client:0.11'
     errorStrategy 'retry'
     maxRetries 2
     storeDir "${params.panorama_cache_directory}"

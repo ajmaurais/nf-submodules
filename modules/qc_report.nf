@@ -52,7 +52,7 @@ process GENERATE_QC_QMD {
     script:
         standard_proteins_args = "--addStdProtein ${(standard_proteins as List).collect{it}.join(' --addStdProtein ')}"
         """
-        generate_qc_qmd ${standard_proteins_args} --title '${qc_report_title}' ${qc_report_db.db3} \
+        generate_qc_qmd ${standard_proteins_args} --title '${qc_report_title}' ${qc_report_db} \
             > >(tee "make_qmd.stdout") 2> >(tee "make_qmd.stderr" >&2)
         """
 
