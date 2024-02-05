@@ -37,7 +37,7 @@ process PANORAMA_GET_RAW_FILE_LIST {
         -w "${web_dav_url}" \
         -k \$PANORAMA_API_KEY \
         -o panorama_files.txt \
-        1>panorama-get-files.stdout 2>panorama-get-files.stderr && \
+        > >(tee "panorama-get-files.stdout") 2> >(tee "panorama-get-files.stderr" >&2) &&
         grep -P '${regex}' panorama_files.txt | xargs -I % sh -c 'touch %.download'
 
     echo "Done!" # Needed for proper exit
@@ -45,7 +45,9 @@ process PANORAMA_GET_RAW_FILE_LIST {
 
     stub:
     """
-    touch "panorama_files.txt"
+    touch panorama_files.txt
+    touch stub.download
+    touch stub.stdout stub.stderr
     """
 }
 
@@ -110,6 +112,7 @@ process PANORAMA_GET_RAW_FILE {
     stub:
     """
     touch "{$download_file_placeholder.baseName}"
+    touch stub.stdout stub.stderr
     """
 }
 
@@ -138,9 +141,9 @@ process PANORAMA_UPLOAD_FILE {
         """
 
     stub:
-        """
-        touch null.stdout null.stderr
-        """
+    """
+    touch stub.stdout stub.stderr
+    """
 }
 
 process PANORAMA_IMPORT_SKYLINE {
@@ -168,8 +171,8 @@ process PANORAMA_IMPORT_SKYLINE {
         """
 
     stub:
-        """
-        touch null.stdout null.stderr
-        """
+    """
+    touch stub.stdout stub.stderr
+    """
 }
 

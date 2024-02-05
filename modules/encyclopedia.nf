@@ -42,6 +42,16 @@ process ENCYCLOPEDIA_SEARCH_FILE {
         ${encyclopedia_params} \\
         1>"encyclopedia-${mzml_file.baseName}.stdout" 2>"encyclopedia-${mzml_file.baseName}.stderr"
     """
+
+    stub:
+    """
+    touch stub.stdout stub.stderr
+    touch "${mzml_file}.elib"
+    touch "${mzml_file.baseName}.dia"
+    touch "${mzml_file}.features.txt"
+    touch "${mzml_file}.encyclopedia.txt"
+    touch "${mzml_file}.encyclopedia.decoy.txt"
+    """
 }
 
 process ENCYCLOPEDIA_CREATE_ELIB {
@@ -83,6 +93,12 @@ process ENCYCLOPEDIA_CREATE_ELIB {
         ${encyclopedia_params} \\
         1>"${outputFilePrefix}.stdout" 2>"${outputFilePrefix}.stderr"
     """
+
+    stub:
+    """
+    touch stub.stdout stub.stderr
+    touch "${outputFilePrefix}-combined-results.elib"
+    """
 }
 
 process ENCYCLOPEDIA_BLIB_TO_DLIB {
@@ -99,7 +115,7 @@ process ENCYCLOPEDIA_BLIB_TO_DLIB {
     output:
         path("*.stderr"), emit: stderr
         path("*.stdout"), emit: stdout
-        path("${blib.baseName}.dlib", emit: dlib)
+        path("${blib.baseName}.dlib"), emit: dlib
 
     script:
     """
@@ -111,5 +127,11 @@ process ENCYCLOPEDIA_BLIB_TO_DLIB {
         -i "${blib}" \\
         -f "${fasta}" \\
         1>"encyclopedia-convert-blib.stdout" 2>"encyclopedia-convert-blib.stderr"
+    """
+
+    stub:
+    """
+    touch stub.stdout stub.stderr
+    touch "${blib.baseName}.dlib"
     """
 }
