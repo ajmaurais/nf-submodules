@@ -3,6 +3,22 @@ def exec_java_command(mem, encyclopedia_version) {
     return "java -Djava.aws.headless=true ${xmx} -jar /code/encyclopedia-${encyclopedia_version}-executable.jar"
 }
 
+process GET_VERSION {
+    publishDir "${params.result_dir}/encyclopedia", failOnError: true, mode: 'copy'
+    label 'process_low'
+    container "mauraisa/encyclopedia:${params.encyclopedia.version}"
+
+    output:
+        path("version.txt"), emit: info_file
+        env encyclopedia_version, emit version
+
+    shell:
+    '''
+    encyclopedia_version=$(!{exec_java_command(task.memory, params.encyclopedia_version)} --version | \
+        |tee 'version.txt'| awk '{print $4}')
+    '''
+}
+
 process ENCYCLOPEDIA_SEARCH_FILE {
     publishDir "${params.result_dir}/encyclopedia/search-file", pattern: "*.stderr", failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/encyclopedia/search-file", pattern: "*.stdout", failOnError: true, mode: 'copy'
@@ -40,7 +56,7 @@ process ENCYCLOPEDIA_SEARCH_FILE {
         -l ${spectra_library_file} \\
         -percolatorVersion /usr/local/bin/percolator \\
         ${encyclopedia_params} \\
-        1>"encyclopedia-${mzml_file.baseName}.stdout" 2>"encyclopedia-${mzml_file.baseName}.stderr"
+        > >(tee "encyclopedia-${mzml_file.baseName}.stdout") 2> >(tee "encyclopedia-${mzml_file.baseName}.stderr" >&2)
     """
 
     stub:
@@ -91,7 +107,7 @@ process ENCYCLOPEDIA_CREATE_ELIB {
         -l ${spectra_library_file} \\
         -percolatorVersion /usr/local/bin/percolator \\
         ${encyclopedia_params} \\
-        1>"${outputFilePrefix}.stdout" 2>"${outputFilePrefix}.stderr"
+        > >(tee "${outputFilePrefix}.stdout") 2> >(tee "${outputFilePrefix}.stderr" >&2)
     """
 
     stub:
@@ -126,7 +142,7 @@ process ENCYCLOPEDIA_BLIB_TO_DLIB {
         -o "${blib.baseName}.dlib" \\
         -i "${blib}" \\
         -f "${fasta}" \\
-        1>"encyclopedia-convert-blib.stdout" 2>"encyclopedia-convert-blib.stderr"
+        > >(tee "encyclopedia-convert-blib.stdout") 2> >(tee "encyclopedia-convert-blib.stderr" >&2)
     """
 
     stub:

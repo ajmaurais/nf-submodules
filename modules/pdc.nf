@@ -1,4 +1,27 @@
 
+process GET_DOCKER_INFO {
+    publishDir "${params.result_dir}/qc_report", failOnError: true, mode: 'copy'
+    label 'process_low'
+    container 'mauraisa/dia_qc_report:1.4'
+
+    output:
+        path('docker_info.txt'), emit: info_file
+        env GIT_HASH, emit: git_hash
+        env GIT_SHORT_HASH, emit: git_short_hash
+        env GIT_UNCOMMITTED_CHANGES, emit: git_uncommitted_changes
+        env GIT_LAST_COMMIT, emit: git_last_commit
+        env DOCKER_TAG, emit: docker_tag
+
+    shell:
+        '''
+        echo -e "GIT_HASH=${GIT_HASH}" > docker_info.txt
+        echo -e "GIT_SHORT_HASH=${GIT_SHORT_HASH}" >> docker_info.txt
+        echo -e "GIT_UNCOMMITTED_CHANGES=${GIT_UNCOMMITTED_CHANGES}" >> docker_info.txt
+        echo -e "GIT_LAST_COMMIT=${GIT_LAST_COMMIT}" >> docker_info.txt
+        echo -e "DOCKER_TAG=${DOCKER_TAG}" >> docker_info.txt
+        '''
+}
+
 process GET_STUDY_ID {
     label 'process_low_constant'
     errorStrategy 'retry'

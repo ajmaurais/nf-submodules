@@ -11,10 +11,33 @@ def format_flags(vars, flag) {
     return format_flag(vars, flag)
 }
 
+process GET_DOCKER_INFO {
+    publishDir "${params.result_dir}/qc_report", failOnError: true, mode: 'copy'
+    label 'process_low'
+    container 'mauraisa/dia_qc_report:1.4'
+
+    output:
+        path('docker_info.txt'), emit: info_file
+        env GIT_HASH, emit: git_hash
+        env GIT_SHORT_HASH, emit: git_short_hash
+        env GIT_UNCOMMITTED_CHANGES, emit: git_uncommitted_changes
+        env GIT_LAST_COMMIT, emit: git_last_commit
+        env DOCKER_TAG, emit: docker_tag
+
+    shell:
+        '''
+        echo -e "GIT_HASH=${GIT_HASH}" > docker_info.txt
+        echo -e "GIT_SHORT_HASH=${GIT_SHORT_HASH}" >> docker_info.txt
+        echo -e "GIT_UNCOMMITTED_CHANGES=${GIT_UNCOMMITTED_CHANGES}" >> docker_info.txt
+        echo -e "GIT_LAST_COMMIT=${GIT_LAST_COMMIT}" >> docker_info.txt
+        echo -e "DOCKER_TAG=${DOCKER_TAG}" >> docker_info.txt
+        '''
+}
+
 process GENERATE_QC_QMD {
     publishDir "${params.result_dir}/qc_report", failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.2'
+    container 'mauraisa/dia_qc_report:1.4'
 
     input:
         path qc_report_db
@@ -36,7 +59,7 @@ process GENERATE_QC_QMD {
     stub:
         """
         touch qc_report.qmd
-        touch empty.stdout empty.stderr
+        touch stub.stdout stub.stderr
         """
 }
 
@@ -45,7 +68,7 @@ process RENDER_QC_REPORT {
     publishDir "${params.result_dir}/qc_report", pattern: '*.stdout', failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/qc_report", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.2'
+    container 'mauraisa/dia_qc_report:1.4'
 
     input:
         path qmd
@@ -53,21 +76,20 @@ process RENDER_QC_REPORT {
         val report_format
 
     output:
-        path("qc_report.${format}"), emit: qc_report
+        path("qc_report.${report_format}"), emit: qc_report
         path("*.stdout"), emit: stdout
         path("*.stderr"), emit: stderr
 
     script:
-        format = report_format
         """
-        quarto render qc_report.qmd --to '${format}' \
+        quarto render qc_report.qmd --to '${report_format}' \
             > >(tee "render_${report_format}_report.stdout") 2> >(tee "render_${report_format}_report.stderr" >&2)
         """
 
     stub:
         """
-        touch "qc_report.${format}"
-        touch empty.stdout empty.stderr
+        touch "qc_report.${report_format}"
+        touch stub.stdout stub.stderr
         """
 }
 
@@ -75,7 +97,7 @@ process RENDER_QC_REPORT {
 process NORMALIZE_DB {
     publishDir "${params.result_dir}/batch_report/normalize_db", failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.2'
+    container 'mauraisa/dia_qc_report:1.4'
 
     input:
         path batch_db
@@ -98,14 +120,14 @@ process NORMALIZE_DB {
     stub:
         """
         touch "normalized_${batch_db.baseName}.db3"
-        touch empty.stdout empty.stderr
+        touch stub.stdout stub.stderr
         """
 }
 
 process GENERATE_BATCH_RMD {
     publishDir "${params.result_dir}/batch_report/rmd", failOnError: true, mode: 'copy'
     label 'process_low'
-    container 'mauraisa/dia_qc_report:1.2'
+    container 'mauraisa/dia_qc_report:1.4'
 
     input:
         path normalized_db
@@ -134,7 +156,7 @@ process GENERATE_BATCH_RMD {
     stub:
         """
         touch bc_report.rmd
-        touch empty.stdout empty.stderr
+        touch stub.stdout stub.stderr
         """
 }
 
@@ -145,7 +167,7 @@ process RENDER_BATCH_RMD {
     publishDir "${params.result_dir}/batch_report/rmd", pattern: '*.stdout', failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/batch_report/rmd", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.2'
+    container 'mauraisa/dia_qc_report:1.4'
 
     input:
         path batch_rmd
@@ -168,7 +190,7 @@ process RENDER_BATCH_RMD {
     stub:
         """
         touch bc_report.html
-        touch empty.stdout empty.stderr
+        touch stub.stdout stub.stderr
         """
 }
 
@@ -176,7 +198,7 @@ process RENDER_BATCH_RMD {
 process MERGE_REPORTS {
     publishDir "${params.result_dir}/batch_report/merge_reports", failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.2'
+    container 'mauraisa/dia_qc_report:1.4'
 
     input:
         val study_names
@@ -213,7 +235,7 @@ process MERGE_REPORTS {
     stub:
         """
         touch data.db3
-        touch empty.stdout empty.stderr
+        touch stub.stdout stub.stderr
         """
 }
 
