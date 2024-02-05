@@ -1,6 +1,6 @@
 
 process GET_DOCKER_INFO {
-    publishDir "${params.result_dir}/qc_report", failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/pdc", failOnError: true, mode: 'copy'
     label 'process_low'
     container 'mauraisa/dia_qc_report:1.4'
 
