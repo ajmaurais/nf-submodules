@@ -14,7 +14,7 @@ def format_flags(vars, flag) {
 process GET_DOCKER_INFO {
     publishDir "${params.result_dir}/qc_report", failOnError: true, mode: 'copy'
     label 'process_low'
-    container 'mauraisa/dia_qc_report:1.4'
+    container 'mauraisa/dia_qc_report:1.5'
 
     output:
         path('docker_info.txt'), emit: info_file
@@ -37,11 +37,10 @@ process GET_DOCKER_INFO {
 process GENERATE_QC_QMD {
     publishDir "${params.result_dir}/qc_report", failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.4'
+    container 'mauraisa/dia_qc_report:1.5'
 
     input:
         path qc_report_db
-        val standard_proteins
         val qc_report_title
 
     output:
@@ -50,7 +49,8 @@ process GENERATE_QC_QMD {
         path("*.stderr"), emit: stderr
 
     script:
-        standard_proteins_args = "--addStdProtein ${(standard_proteins as List).collect{it}.join(' --addStdProtein ')}"
+        standard_proteins_args = "--addStdProtein ${(params.qc_report.standard_proteins as List).collect{it}.join(' --addStdProtein ')}"
+        standard_proteins_args = "--addColorVar ${(params.qc_report.color_vars as List).collect{it}.join(' --addColorVar ')}"
         """
         generate_qc_qmd ${standard_proteins_args} --title '${qc_report_title}' ${qc_report_db} \
             > >(tee "make_qmd.stdout") 2> >(tee "make_qmd.stderr" >&2)
@@ -68,7 +68,7 @@ process RENDER_QC_REPORT {
     publishDir "${params.result_dir}/qc_report", pattern: '*.stdout', failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/qc_report", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.4'
+    container 'mauraisa/dia_qc_report:1.5'
 
     input:
         path qmd
@@ -97,7 +97,7 @@ process RENDER_QC_REPORT {
 process NORMALIZE_DB {
     publishDir "${params.result_dir}/batch_report/normalize_db", failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.4'
+    container 'mauraisa/dia_qc_report:1.5'
 
     input:
         path batch_db
@@ -127,7 +127,7 @@ process NORMALIZE_DB {
 process GENERATE_BATCH_RMD {
     publishDir "${params.result_dir}/batch_report/rmd", failOnError: true, mode: 'copy'
     label 'process_low'
-    container 'mauraisa/dia_qc_report:1.4'
+    container 'mauraisa/dia_qc_report:1.5'
 
     input:
         path normalized_db
@@ -167,7 +167,7 @@ process RENDER_BATCH_RMD {
     publishDir "${params.result_dir}/batch_report/rmd", pattern: '*.stdout', failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/batch_report/rmd", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.4'
+    container 'mauraisa/dia_qc_report:1.5'
 
     input:
         path batch_rmd
@@ -198,7 +198,7 @@ process RENDER_BATCH_RMD {
 process MERGE_REPORTS {
     publishDir "${params.result_dir}/batch_report/merge_reports", failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.4'
+    container 'mauraisa/dia_qc_report:1.5'
 
     input:
         val study_names

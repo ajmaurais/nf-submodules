@@ -34,7 +34,6 @@ workflow generate_dia_qc_report {
                       metadata_csv)
 
         GENERATE_QC_QMD(GENERATE_QC_REPORT_DB.out.final_db,
-                        params.qc_report.standard_proteins,
                         qc_report_title)
 
         report_formats = Channel.from(['html', 'pdf'])
