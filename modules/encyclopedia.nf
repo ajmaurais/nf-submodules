@@ -9,14 +9,14 @@ process GET_VERSION {
     container "mauraisa/encyclopedia:${params.encyclopedia.version}"
 
     output:
-        path("version.txt"), emit: info_file
-        env encyclopedia_version, emit version
+        path('version.txt'), emit: info_file
+        env encyclopedia_version, emit: version
 
     shell:
-    '''
-    encyclopedia_version=$(!{exec_java_command(task.memory, params.encyclopedia_version)} --version | \
-        |tee 'version.txt'| awk '{print $4}')
-    '''
+        '''
+        java -jar /code/encyclopedia-!{params.encyclopedia.version}-executable.jar --version > 'version.txt' || echo "encyclopedia_exit=$?"
+        encyclopedia_version=$(cat version.txt| awk '{print $4}')
+        '''
 }
 
 process ENCYCLOPEDIA_SEARCH_FILE {

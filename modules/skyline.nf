@@ -1,4 +1,37 @@
 
+process GET_VERSION {
+    publishDir "${params.result_dir}/skyline", failOnError: true, mode: 'copy'
+    label 'process_low'
+    container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24020-c3a52ef'
+
+    output:
+        path("version.txt"), emit: info_file
+        env skyline_build, emit: skyline_build
+        env skyline_version, emit: skyline_version
+        env skyline_commit, emit: skyline_commit
+        env msconvert_version, emit: msconvert_version
+
+    shell:
+    '''
+    wine SkylineCmd --version > version.txt
+
+    # parse Skyline version info
+    vars=($(cat version.txt | \
+            tr -cd '\\11\\12\\15\\40-\\176' | \
+            egrep -o 'Skyline.*' | \
+            sed -E "s/(Skyline[-a-z]*) \\((.*)\\) ([.0-9]+) \\(([A-Za-z0-9]{7})\\)/\\1 \\3 \\4/"))
+    skyline_build="${vars[0]}"
+    skyline_version="${vars[1]}"
+    skyline_commit="${vars[2]}"
+
+    # parse msconvert info
+    msconvert_version=$(cat version.txt | \
+                        tr -cd '\\11\\12\\15\\40-\\176' | \
+                        egrep -o 'Proteo[a-zA-Z0-9\\. ]+' | \
+                        egrep -o [0-9].*)
+    '''
+}
+
 process SKYLINE_ADD_LIB {
     publishDir "${params.result_dir}/skyline/add-lib", failOnError: true, mode: 'copy', enabled: params.skyline.save_intermediate_output
     label 'process_medium'

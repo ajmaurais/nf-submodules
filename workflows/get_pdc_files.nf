@@ -29,7 +29,7 @@ workflow get_pdc_files {
     main:
         get_pdc_study_metadata()
         metadata = get_pdc_study_metadata.out.metadata
-        annotations_csv = get_pdc_study_metadata.out.metadata
+        annotations_csv = get_pdc_study_metadata.out.annotations_csv
 
         metadata \
             | splitCsv(header:true, sep:'\t') \
