@@ -140,39 +140,6 @@ process UNZIP_SKY_FILE {
     """
 }
 
-process ZIP_SKY_FILE {
-    publishDir "${params.result_dir}/skyline/zip", failOnError: true, mode: 'copy'
-    label 'process_high_memory'
-    stageInMode 'link'
-    container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24020-c3a52ef'
-
-    input:
-        path sky_file
-        path skyd_file
-        path lib_file
-        val zip_archive_name
-
-    output:
-        path("${zip_archive_name}.sky.zip"), emit: sky_zip_file
-        path("*.stdout"), emit: stdout
-        path("*.stderr"), emit: stderr
-
-    script:
-    """
-    wine SkylineCmd \
-        --in="${sky_file}" \
-        --share-zip="${zip_archive_name}.sky.zip" \
-        --share-type="complete" \
-    > >(tee 'share_zip.stdout') 2> >(tee 'share_zip.stderr' >&2)
-    """
-
-    stub:
-    """
-    touch "${zip_archive_name}.sky.zip"
-    touch stub.stdout stub.stderr
-    """
-}
-
 process SKYLINE_ANNOTATE_DOCUMENT {
     publishDir "${params.result_dir}/skyline/annotate", pattern: "*.stdout", failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/skyline/annotate", pattern: "*.stderr", failOnError: true, mode: 'copy'
@@ -192,22 +159,22 @@ process SKYLINE_ANNOTATE_DOCUMENT {
         path("*.stdout"), emit: stdout
         path("*.stderr"), emit: stderr
 
-    script:
-    """
-    wine SkylineCmd --in="${sky_file}" \
+    shell:
+    '''
+    wine SkylineCmd --in="!{sky_file}" \
         --out="final_annotated.sky" \
-        --import-annotations="${annotation_csv}" --save \
+        --import-annotations="!{annotation_csv}" --save \
         --share-zip="final_annotated.sky.zip" \
     > >(tee 'annotate_doc.stdout') 2> >(tee 'annotate_doc.stderr' >&2)
-    """
+    '''
 
     stub:
-    """
+    '''
     touch "final_annotated.sky"
     touch "final_annotated.skyd"
     touch "stub.blib"
     touch stub.stdout stub.stderr
-    """
+    '''
 }
 
 process SKYLINE_EXPORT_REPORT {
@@ -243,4 +210,3 @@ process SKYLINE_EXPORT_REPORT {
     touch stub.stdout stub.stderr
     """
 }
-
