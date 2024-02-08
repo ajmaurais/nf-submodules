@@ -36,7 +36,6 @@ process SKYLINE_ADD_LIB {
     publishDir "${params.result_dir}/skyline/add-lib", failOnError: true, mode: 'copy', enabled: params.skyline.save_intermediate_output
     label 'process_medium'
     label 'error_retry'
-    stageInMode 'link'
     container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24020-c3a52ef'
 
     input:
@@ -74,9 +73,7 @@ process SKYLINE_ADD_LIB {
 process SKYLINE_IMPORT_MZML {
     publishDir "${params.result_dir}/skyline/import-spectra", failOnError: true, mode: 'copy', enabled: params.skyline.save_intermediate_output
     label 'process_medium'
-    label 'process_high_memory'
     label 'error_retry'
-    stageInMode 'link'
     container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24020-c3a52ef'
 
     input:
@@ -91,6 +88,8 @@ process SKYLINE_IMPORT_MZML {
     script:
     """
     unzip ${skyline_zipfile}
+
+    cp ${mzml_file} /tmp/${mzml_file}
 
     wine SkylineCmd \
         --in="${skyline_zipfile.baseName}" \
@@ -110,7 +109,6 @@ process SKYLINE_MERGE_RESULTS {
     publishDir "${params.result_dir}/skyline/import-spectra", failOnError: true, mode: 'copy', enabled: params.skyline.save_intermediate_output
     label 'process_high'
     label 'error_retry'
-    stageInMode 'link'
     container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24020-c3a52ef'
 
     input:
@@ -124,13 +122,12 @@ process SKYLINE_MERGE_RESULTS {
         path("*.stderr"), emit: stderr
 
     script:
-    import_files_params = "--import-file=${(mzml_files as List).collect{ file(it).name }.join(' --import-file=')}"
     """
     unzip ${skyline_zipfile}
 
     wine SkylineCmd \
         --in="${skyline_zipfile.baseName}" \
-        ${import_files_params} \
+        --import-file="${(mzml_files as List).collect{ "/tmp/" + file(it).name }.join('" --import-file="')}" \
         --out="final.sky" \
         --save \
         --share-zip="final.sky.zip" \
@@ -146,7 +143,6 @@ process SKYLINE_MERGE_RESULTS {
 }
 
 process UNZIP_SKY_FILE {
-    publishDir "${params.result_dir}/skyline/unzip", failOnError: true, pattern: '*.archive_files.txt', mode: 'copy'
     label 'process_high_memory'
     container 'mauraisa/aws_bash:0.5'
 
@@ -174,8 +170,7 @@ process UNZIP_SKY_FILE {
 }
 
 process SKYLINE_ANNOTATE_DOCUMENT {
-    publishDir "${params.result_dir}/skyline/annotate", pattern: "*.stdout", failOnError: true, mode: 'copy'
-    publishDir "${params.result_dir}/skyline/annotate", pattern: "*.stderr", failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/skyline/annotate", failOnError: true, mode: 'copy'
     label 'process_medium'
     label 'error_retry'
     stageInMode 'link'
@@ -193,13 +188,13 @@ process SKYLINE_ANNOTATE_DOCUMENT {
         path("*.stderr"), emit: stderr
 
     shell:
-    '''
-    wine SkylineCmd --in="!{sky_file}" \
+    """
+    wine SkylineCmd --in="${sky_file}" \
         --out="final_annotated.sky" \
-        --import-annotations="!{annotation_csv}" --save \
+        --import-annotations="${annotation_csv}" --save \
         --share-zip="final_annotated.sky.zip" \
     > >(tee 'annotate_doc.stdout') 2> >(tee 'annotate_doc.stderr' >&2)
-    '''
+    """
 
     stub:
     '''

@@ -5,6 +5,7 @@ process MSCONVERT {
     label 'process_medium'
     label 'error_retry'
     container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:latest'
+    // container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.23187-2243781'
 
     input:
         path raw_file
