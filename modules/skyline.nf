@@ -151,8 +151,7 @@ process UNZIP_SKY_FILE {
 
     output:
         path("*.sky"), emit: sky_file
-        path("*.skyd"), emit: skyd_file
-        path("*.[eb]lib"), emit: lib_file
+        path("*.{skyd,[eb]lib,[eb]libc,protdb,sky.view}"), emit: sky_artifacts
         path("*.archive_files.txt"), emit: log
 
     script:
@@ -178,8 +177,7 @@ process SKYLINE_ANNOTATE_DOCUMENT {
 
     input:
         path sky_file
-        path skyd_file
-        path lib_file
+        path sky_artifacts
         path annotation_csv
 
     output:
@@ -198,9 +196,7 @@ process SKYLINE_ANNOTATE_DOCUMENT {
 
     stub:
     '''
-    touch "final_annotated.sky"
-    touch "final_annotated.skyd"
-    touch "stub.blib"
+    touch "final_annotated.sky.zip"
     touch stub.stdout stub.stderr
     '''
 }
@@ -214,8 +210,7 @@ process SKYLINE_EXPORT_REPORT {
 
     input:
         path sky_file
-        path skyd_file
-        path lib_file
+        path sky_artifacts
         path report_template
 
     output:

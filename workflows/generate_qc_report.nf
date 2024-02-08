@@ -9,8 +9,7 @@ workflow generate_dia_qc_report {
 
     take:
         sky_file
-        skyd_file
-        sky_lib_file
+        sky_artifacts
         study_name
         qc_report_title
         metadata_csv
@@ -21,9 +20,9 @@ workflow generate_dia_qc_report {
         qc_report_db
 
     main:
-        EXPORT_REPLICATE_REPORT(sky_file, skyd_file, sky_lib_file,
+        EXPORT_REPLICATE_REPORT(sky_file, sky_artifacts,
                                 params.qc_report.replicate_report_template)
-        EXPORT_PRECURSOR_REPORT(sky_file, skyd_file, sky_lib_file,
+        EXPORT_PRECURSOR_REPORT(sky_file, sky_artifacts,
                                 params.qc_report.precursor_report_template)
 
         GENERATE_QC_REPORT_DB(study_name,
