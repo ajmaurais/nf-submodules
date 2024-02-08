@@ -25,11 +25,7 @@ workflow s3_upload {
         // Reports
         qc_reports
 
-    emit:
-        docker_tag
-
     main:
-        GET_DOCKER_INFO()
         docker_tag = GET_DOCKER_INFO.out.docker_tag
 
         mzml_file_groups = mzml_files.collate(20)
