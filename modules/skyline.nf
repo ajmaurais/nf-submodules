@@ -5,11 +5,7 @@ process GET_VERSION {
     container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24020-c3a52ef'
 
     output:
-        path("version.txt"), emit: info_file
-        env skyline_build, emit: skyline_build
-        env skyline_version, emit: skyline_version
-        env skyline_commit, emit: skyline_commit
-        env msconvert_version, emit: msconvert_version
+        path("pwiz_versions.txt"), emit: info_file
 
     shell:
     '''
@@ -29,6 +25,11 @@ process GET_VERSION {
                         tr -cd '\\11\\12\\15\\40-\\176' | \
                         egrep -o 'Proteo[a-zA-Z0-9\\. ]+' | \
                         egrep -o [0-9].*)
+
+    echo "skyline_build=${skyline_build}" > pwiz_versions.txt
+    echo "skyline_version=${skyline_version}" >> pwiz_versions.txt
+    echo "skyline_commit=${skyline_commit}" >> pwiz_versions.txt
+    echo "msconvert_version=${msconvert_version}" >> pwiz_versions.txt
     '''
 }
 
@@ -226,7 +227,7 @@ process SKYLINE_EXPORT_REPORT {
         --report-name="${report_template.baseName}" --report-file="${report_template.baseName}.tsv" \
     > >(tee 'export_${report_template.baseName}.stdout') 2> >(tee 'export_${report_template.baseName}.stderr' >&2)
     """
-    
+
     stub:
     """
     touch "${report_template.baseName}.tsv"

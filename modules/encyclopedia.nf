@@ -9,13 +9,12 @@ process GET_VERSION {
     container "mauraisa/encyclopedia:${params.encyclopedia.version}"
 
     output:
-        path('version.txt'), emit: info_file
-        env encyclopedia_version, emit: version
+        path('encyclopedia_version.txt'), emit: info_file
 
     shell:
         '''
         java -jar /code/encyclopedia-!{params.encyclopedia.version}-executable.jar --version > 'version.txt' || echo "encyclopedia_exit=$?"
-        encyclopedia_version=$(cat version.txt| awk '{print $4}')
+        echo "encyclopedia_version=$(cat version.txt| awk '{print $4}')" > encyclopedia_version.txt
         '''
 }
 

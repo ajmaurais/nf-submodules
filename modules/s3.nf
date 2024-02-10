@@ -2,29 +2,27 @@
 process GET_DOCKER_INFO {
     publishDir "${params.result_dir}/s3", failOnError: true, mode: 'copy'
     label 'process_low'
-    container 'mauraisa/s3_client:0.6'
+    container 'mauraisa/s3_client:0.7'
 
     output:
-        path('docker_info.txt'), emit: info_file
-        env GIT_HASH, emit: git_hash
-        env GIT_SHORT_HASH, emit: git_short_hash
-        env GIT_UNCOMMITTED_CHANGES, emit: git_uncommitted_changes
-        env GIT_LAST_COMMIT, emit: git_last_commit
-        env DOCKER_TAG, emit: docker_tag
+        path('s3_client_versions.txt'), emit: info_file
 
     shell:
         '''
-        echo -e "GIT_HASH=${GIT_HASH}" > docker_info.txt
-        echo -e "GIT_SHORT_HASH=${GIT_SHORT_HASH}" >> docker_info.txt
-        echo -e "GIT_UNCOMMITTED_CHANGES=${GIT_UNCOMMITTED_CHANGES}" >> docker_info.txt
-        echo -e "GIT_LAST_COMMIT=${GIT_LAST_COMMIT}" >> docker_info.txt
-        echo -e "DOCKER_TAG=${DOCKER_TAG}" >> docker_info.txt
+        echo -e "GIT_HASH=${GIT_HASH}" > s3_client_versions.txt
+        echo -e "GIT_BRANCH=${GIT_BRANCH}" >> s3_client_versions.txt
+        echo -e "GIT_REPO=${GIT_REPO}" >> s3_client_versions.txt
+        echo -e "GIT_SHORT_HASH=${GIT_SHORT_HASH}" >> s3_client_versions.txt
+        echo -e "GIT_UNCOMMITTED_CHANGES=${GIT_UNCOMMITTED_CHANGES}" >> s3_client_versions.txt
+        echo -e "GIT_LAST_COMMIT=${GIT_LAST_COMMIT}" >> s3_client_versions.txt
+        echo -e "DOCKER_IMAGE=${DOCKER_IMAGE}" >> s3_client_versions.txt
+        echo -e "DOCKER_TAG=${DOCKER_TAG}" >> s3_client_versions.txt
         '''
 }
 
 process UPLOAD_FILE {
     label 'process_low_constant'
-    container 'mauraisa/s3_client:0.6'
+    container 'mauraisa/s3_client:0.7'
     publishDir "${params.result_dir}/s3", failOnError: true, mode: 'copy'
 
     input:
@@ -56,7 +54,7 @@ process UPLOAD_FILE {
 
 process UPLOAD_MANY_FILES {
     label 'process_high_memory'
-    container 'mauraisa/s3_client:0.6'
+    container 'mauraisa/s3_client:0.7'
     publishDir "${params.result_dir}/s3", failOnError: true, mode: 'copy'
 
     input:

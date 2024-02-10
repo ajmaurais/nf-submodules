@@ -14,30 +14,28 @@ def format_flags(vars, flag) {
 process GET_DOCKER_INFO {
     publishDir "${params.result_dir}/qc_report", failOnError: true, mode: 'copy'
     label 'process_low'
-    container 'mauraisa/dia_qc_report:1.5'
+    container 'mauraisa/dia_qc_report:1.6'
 
     output:
-        path('docker_info.txt'), emit: info_file
-        env GIT_HASH, emit: git_hash
-        env GIT_SHORT_HASH, emit: git_short_hash
-        env GIT_UNCOMMITTED_CHANGES, emit: git_uncommitted_changes
-        env GIT_LAST_COMMIT, emit: git_last_commit
-        env DOCKER_TAG, emit: docker_tag
+        path('dia_qc_report_versions.txt'), emit: info_file
 
     shell:
         '''
-        echo -e "GIT_HASH=${GIT_HASH}" > docker_info.txt
-        echo -e "GIT_SHORT_HASH=${GIT_SHORT_HASH}" >> docker_info.txt
-        echo -e "GIT_UNCOMMITTED_CHANGES=${GIT_UNCOMMITTED_CHANGES}" >> docker_info.txt
-        echo -e "GIT_LAST_COMMIT=${GIT_LAST_COMMIT}" >> docker_info.txt
-        echo -e "DOCKER_TAG=${DOCKER_TAG}" >> docker_info.txt
+        echo -e "GIT_HASH=${GIT_HASH}" > dia_qc_report_versions.txt
+        echo -e "GIT_BRANCH=${GIT_BRANCH}" >> dia_qc_report_versions.txt
+        echo -e "GIT_REPO=${GIT_REPO}" >> dia_qc_report_versions.txt
+        echo -e "GIT_SHORT_HASH=${GIT_SHORT_HASH}" >> dia_qc_report_versions.txt
+        echo -e "GIT_UNCOMMITTED_CHANGES=${GIT_UNCOMMITTED_CHANGES}" >> dia_qc_report_versions.txt
+        echo -e "GIT_LAST_COMMIT=${GIT_LAST_COMMIT}" >> dia_qc_report_versions.txt
+        echo -e "DOCKER_IMAGE=${DOCKER_IMAGE}" >> dia_qc_report_versions.txt
+        echo -e "DOCKER_TAG=${DOCKER_TAG}" >> dia_qc_report_versions.txt
         '''
 }
 
 process GENERATE_QC_QMD {
     publishDir "${params.result_dir}/qc_report", failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.5'
+    container 'mauraisa/dia_qc_report:1.6'
 
     input:
         path qc_report_db
@@ -68,7 +66,7 @@ process RENDER_QC_REPORT {
     publishDir "${params.result_dir}/qc_report", pattern: '*.stdout', failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/qc_report", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.5'
+    container 'mauraisa/dia_qc_report:1.6'
 
     input:
         path qmd
@@ -97,7 +95,7 @@ process RENDER_QC_REPORT {
 process NORMALIZE_DB {
     publishDir "${params.result_dir}/batch_report/normalize_db", failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.5'
+    container 'mauraisa/dia_qc_report:1.6'
 
     input:
         path batch_db
@@ -127,7 +125,7 @@ process NORMALIZE_DB {
 process GENERATE_BATCH_RMD {
     publishDir "${params.result_dir}/batch_report/rmd", failOnError: true, mode: 'copy'
     label 'process_low'
-    container 'mauraisa/dia_qc_report:1.5'
+    container 'mauraisa/dia_qc_report:1.6'
 
     input:
         path normalized_db
@@ -167,7 +165,7 @@ process RENDER_BATCH_RMD {
     publishDir "${params.result_dir}/batch_report/rmd", pattern: '*.stdout', failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/batch_report/rmd", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.5'
+    container 'mauraisa/dia_qc_report:1.6'
 
     input:
         path batch_rmd
@@ -198,7 +196,7 @@ process RENDER_BATCH_RMD {
 process MERGE_REPORTS {
     publishDir "${params.result_dir}/batch_report/merge_reports", failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.5'
+    container 'mauraisa/dia_qc_report:1.6'
 
     input:
         val study_names
