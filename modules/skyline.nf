@@ -1,3 +1,14 @@
+def check_max_mem(obj) {
+    try {
+        if (obj.compareTo(params.max_memory as nextflow.util.MemoryUnit) == 1)
+            return (params.max_memory as nextflow.util.MemoryUnit) - 1.Gb
+        else
+            return obj
+    } catch (all) {
+        println "   ### ERROR ###   Max memory '${params.max_memory}' is not valid! Using default value: $obj"
+        return obj
+    }
+}
 
 process GET_VERSION {
     publishDir "${params.result_dir}/skyline", failOnError: true, mode: 'copy'
@@ -109,7 +120,7 @@ process SKYLINE_IMPORT_MZML {
 process SKYLINE_MERGE_RESULTS {
     publishDir "${params.result_dir}/skyline/import-spectra", failOnError: true, mode: 'copy', enabled: params.skyline.save_intermediate_output
     cpus 16
-    memory { check_max(2.GB * skyd_files.size(), 'memory') } // Allocate 2 GB of RAM per mzml file
+    memory { check_max_mem(1.GB * skyd_files.size()) } // Allocate 1 GB of RAM per mzml file
     time 4.h
     label 'error_retry'
     container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:skyline_23_1'
