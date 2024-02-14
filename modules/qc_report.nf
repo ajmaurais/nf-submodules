@@ -34,7 +34,7 @@ process GET_DOCKER_INFO {
 
 process GENERATE_QC_QMD {
     publishDir "${params.result_dir}/qc_report", failOnError: true, mode: 'copy'
-    label 'process_high_memory'
+    label 'process_medium'
     container 'mauraisa/dia_qc_report:1.6'
 
     input:
@@ -48,9 +48,9 @@ process GENERATE_QC_QMD {
 
     script:
         standard_proteins_args = "--addStdProtein ${(params.qc_report.standard_proteins as List).collect{it}.join(' --addStdProtein ')}"
-        standard_proteins_args = "--addColorVar ${(params.qc_report.color_vars as List).collect{it}.join(' --addColorVar ')}"
+        color_vars_args = "--addColorVar ${(params.qc_report.color_vars as List).collect{it}.join(' --addColorVar ')}"
         """
-        generate_qc_qmd ${standard_proteins_args} --title '${qc_report_title}' ${qc_report_db} \
+        generate_qc_qmd ${standard_proteins_args} ${color_vars_args} --title '${qc_report_title}' ${qc_report_db} \
             > >(tee "make_qmd.stdout") 2> >(tee "make_qmd.stderr" >&2)
         """
 
