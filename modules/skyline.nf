@@ -2,7 +2,7 @@
 process GET_VERSION {
     publishDir "${params.result_dir}/skyline", failOnError: true, mode: 'copy'
     label 'process_low'
-    container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24020-c3a52ef'
+    container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:skyline_23_1'
 
     output:
         path("pwiz_versions.txt"), emit: info_file
@@ -37,7 +37,7 @@ process SKYLINE_ADD_LIB {
     publishDir "${params.result_dir}/skyline/add-lib", failOnError: true, mode: 'copy', enabled: params.skyline.save_intermediate_output
     label 'process_medium'
     label 'error_retry'
-    container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24020-c3a52ef'
+    container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:skyline_23_1'
 
     input:
         path skyline_template_zipfile
@@ -72,10 +72,10 @@ process SKYLINE_ADD_LIB {
 }
 
 process SKYLINE_IMPORT_MZML {
-    publishDir "${params.result_dir}/skyline/import-spectra", failOnError: true, mode: 'copy', enabled: params.skyline.save_intermediate_output
+    // publishDir "${params.result_dir}/skyline/import-spectra", failOnError: true, mode: 'copy', enabled: params.skyline.save_intermediate_output
     label 'process_medium'
     label 'error_retry'
-    container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24020-c3a52ef'
+    container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:skyline_23_1'
 
     input:
         path skyline_zipfile
@@ -108,9 +108,11 @@ process SKYLINE_IMPORT_MZML {
 
 process SKYLINE_MERGE_RESULTS {
     publishDir "${params.result_dir}/skyline/import-spectra", failOnError: true, mode: 'copy', enabled: params.skyline.save_intermediate_output
-    label 'process_high'
+    cpus 16
+    memory { check_max(2.GB * skyd_files.size(), 'memory') } // Allocate 2 GB of RAM per mzml file
+    time 4.h
     label 'error_retry'
-    container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24020-c3a52ef'
+    container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:skyline_23_1'
 
     input:
         path skyline_zipfile
@@ -174,7 +176,7 @@ process SKYLINE_ANNOTATE_DOCUMENT {
     label 'process_medium'
     label 'error_retry'
     stageInMode 'link'
-    container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24020-c3a52ef'
+    container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:skyline_23_1'
 
     input:
         path sky_file
@@ -207,7 +209,7 @@ process SKYLINE_EXPORT_REPORT {
     label 'process_medium'
     label 'error_retry'
     stageInMode 'link'
-    container 'quay.io/protio/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24020-c3a52ef'
+    container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:skyline_23_1'
 
     input:
         path sky_file
