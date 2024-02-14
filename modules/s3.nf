@@ -1,8 +1,19 @@
 
+def round_bytes(bytes) {
+    // Breaks for memory allocation intervals in GB
+    breaks = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
+
+    size_gb = breaks.find{ it -> return(((it - 0.5) * (1024L ** 3)) > bytes) }
+    if (size_gb == null) {
+        error 'File size too to allocate memory for process!'
+    }
+    return "${size_gb} GB"
+}
+
 process GET_DOCKER_INFO {
     publishDir "${params.result_dir}/s3", failOnError: true, mode: 'copy'
     label 'process_low'
-    container 'mauraisa/s3_client:0.7'
+    container 'quay.io/mauraisa/s3_client:0.9'
 
     output:
         path('s3_client_versions.txt'), emit: info_file
@@ -21,9 +32,11 @@ process GET_DOCKER_INFO {
 }
 
 process UPLOAD_FILE {
-    label 'process_low_constant'
-    container 'mauraisa/s3_client:0.7'
+    container 'quay.io/mauraisa/s3_client:0.9'
     publishDir "${params.result_dir}/s3", failOnError: true, mode: 'copy'
+    memory { round_bytes(file_to_upload.size()) }
+    cpus 2
+    time '8 h'
 
     input:
         val bucket_name
@@ -35,16 +48,15 @@ process UPLOAD_FILE {
         path("*.stdout"), emit: stdout
         path("*.stderr"), emit: stderr
 
-    script:
-        """
-        s3_client -b "${bucket_name}" \
-            -k "${access_key}" \
-            -s \$S3_SECRET_ACCESS_KEY \
-            put --verbose \
-            "${file_to_upload}" "${destination_path}" \
-            > >(tee "s3_upload_file-${file_to_upload.baseName}.stdout") \
-              2> >(tee "s3_upload_file-${file_to_upload.baseName}.stderr" >&2)
-        """
+    shell:
+        '''
+        s3_client -b "!{bucket_name}" \
+            -k "!{access_key}" \
+            -s ${S3_SECRET_ACCESS_KEY} \
+            put "!{file_to_upload}" "!{destination_path}" \
+            > >(tee 's3_upload_file-!{file_to_upload.baseName}.stdout') \
+              2> >(tee 's3_upload_file-!{file_to_upload.baseName}.stderr' >&2)
+        '''
 
     stub:
     """
@@ -54,7 +66,7 @@ process UPLOAD_FILE {
 
 process UPLOAD_MANY_FILES {
     label 'process_high_memory'
-    container 'mauraisa/s3_client:0.7'
+    container 'quay.io/mauraisa/s3_client:0.9'
     publishDir "${params.result_dir}/s3", failOnError: true, mode: 'copy'
 
     input:
@@ -67,20 +79,17 @@ process UPLOAD_MANY_FILES {
         path("*.stdout"), emit: stdout
         path("*.stderr"), emit: stderr
 
-    script:
+    shell:
         files = "${(files_to_upload as List).collect{ file(it).name }.join(' ')}"
-        """
-        echo ${files}
-        s3_client -b "${bucket_name}" \
-            -k "${access_key}" \
-            -s \$S3_SECRET_ACCESS_KEY \
-            put --verbose \
-            ${files} \
-            "${destination_path}"
-
-        cp -v .command.err "s3_upload_file.stderr"
-        cp -v .command.out "s3_upload_file.stdout"
-        """
+        '''
+        echo !{files}
+        s3_client -b "!{bucket_name}" \
+            -k "!{access_key}" \
+            -s ${S3_SECRET_ACCESS_KEY} \
+            put !{files} \
+            "!{destination_path}"
+            > >(tee 's3_upload_file.stdout') 2> >(tee 's3_upload_file.stderr' >&2)
+        '''
 
     stub:
     """
