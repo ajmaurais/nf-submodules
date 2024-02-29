@@ -14,7 +14,7 @@ def format_flags(vars, flag) {
 process GET_DOCKER_INFO {
     publishDir "${params.result_dir}/qc_report", failOnError: true, mode: 'copy'
     label 'process_low'
-    container 'mauraisa/dia_qc_report:1.6'
+    container 'mauraisa/dia_qc_report:1.9'
 
     output:
         path('dia_qc_report_versions.txt'), emit: info_file
@@ -34,8 +34,8 @@ process GET_DOCKER_INFO {
 
 process GENERATE_QC_QMD {
     publishDir "${params.result_dir}/qc_report", failOnError: true, mode: 'copy'
-    label 'process_medium'
-    container 'mauraisa/dia_qc_report:1.6'
+    label 'process_low'
+    container 'mauraisa/dia_qc_report:1.9'
 
     input:
         path qc_report_db
@@ -66,7 +66,7 @@ process RENDER_QC_REPORT {
     publishDir "${params.result_dir}/qc_report", pattern: '*.stdout', failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/qc_report", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.6'
+    container 'mauraisa/dia_qc_report:1.9'
 
     input:
         path qmd
@@ -91,27 +91,25 @@ process RENDER_QC_REPORT {
         """
 }
 
-
 process NORMALIZE_DB {
     publishDir "${params.result_dir}/batch_report/normalize_db", failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.6'
+    container 'mauraisa/dia_qc_report:1.9'
+    stageInMode 'copy'
 
     input:
         path batch_db
 
     output:
-        path("normalized_${batch_db.baseName}.db3"), emit: normalized_db
+        path("${batch_db.baseName}.db3"), emit: normalized_db
         path("*.stdout"), emit: stdout
         path("*.stderr"), emit: stderr
 
     script:
         """
-        # Copying the database is necissary because the nextflow -resume flag
-        # will not work unless we create a new file
         cp -v ${batch_db} "normalized_${batch_db.baseName}.db3"
 
-        normalize_db "normalized_${batch_db.baseName}.db3" \
+        normalize_db "${batch_db}" \
             > >(tee "normalize_db.stdout") 2> >(tee "normalize_db.stderr" >&2)
         """
 
@@ -125,7 +123,7 @@ process NORMALIZE_DB {
 process GENERATE_BATCH_RMD {
     publishDir "${params.result_dir}/batch_report/rmd", failOnError: true, mode: 'copy'
     label 'process_low'
-    container 'mauraisa/dia_qc_report:1.6'
+    container 'mauraisa/dia_qc_report:1.9'
 
     input:
         path normalized_db
@@ -165,7 +163,7 @@ process RENDER_BATCH_RMD {
     publishDir "${params.result_dir}/batch_report/rmd", pattern: '*.stdout', failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/batch_report/rmd", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.6'
+    container 'mauraisa/dia_qc_report:1.9'
 
     input:
         path batch_rmd
@@ -196,7 +194,7 @@ process RENDER_BATCH_RMD {
 process MERGE_REPORTS {
     publishDir "${params.result_dir}/batch_report/merge_reports", failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'mauraisa/dia_qc_report:1.6'
+    container 'mauraisa/dia_qc_report:1.9'
 
     input:
         val study_names
