@@ -5,7 +5,7 @@ def round_bytes(bytes) {
 
     size_gb = breaks.find{ it -> return(((it - 0.5) * (1024L ** 3)) > bytes) }
     if (size_gb == null) {
-        error 'File size too to allocate memory for process!'
+        error 'File size too large to allocate memory for process!'
     }
     return "${size_gb} GB"
 }
@@ -62,6 +62,56 @@ process UPLOAD_FILE {
     """
     touch stub.stdout stub.stderr
     """
+}
+
+process CALCULATE_FILE_STATS {
+    label 'process_low'
+    memory { round_bytes(file_to_upload.size()) }
+    cpus 2
+    time '1 h'
+    container "${workflow.profile == 'aws' ? 'public.ecr.aws/docker/library/ubuntu:22.04' : 'ubuntu:22.04'}"
+
+    input:
+        tuple val(path), path(file_to_check)
+
+    output:
+        tuple val(path), val("${file_to_check.name}"), env(md5_sum), env(file_size)
+
+    shell:
+        '''
+        md5_sum=$( md5sum !{file_to_check} |awk '{print $1}' )
+        file_size=$( du !{file_to_check} |awk '{print $1}' )
+        '''
+}
+
+process WRITE_FILE_STATS {
+    label 'process_low'
+    container "${workflow.profile == 'aws' ? 'public.ecr.aws/docker/library/python:3.13.0a4' : 'python:3.13.0a4'}"
+    publishDir "${params.result_dir}/s3", failOnError: true, mode: 'copy'
+    
+    input:
+        val paths
+        val fnames
+        val md5_sums
+        val file_sizes
+
+    output:
+        path("file_checksums.tsv")
+    
+    script:
+        """
+        #!/usr/bin/env python3
+
+        file_paths = [ '${paths.join("', '")}' ]
+        file_names = [ '${fnames.join("', '")}' ]
+        hashes = [ '${md5_sums.join("', '")}' ]
+        file_sizes = ${file_sizes}
+
+        with open('file_checksums.tsv', 'w') as outF:
+            outF.write('s3_path\\tfile\\tsize\\tmd5_sum\\n')
+            for path, name, f_size, md5 in zip(file_paths, file_names, file_sizes, hashes):
+                outF.write(f'{path}\\t{name}\\t{f_size}\\t{md5}\\n')
+        """
 }
 
 process UPLOAD_MANY_FILES {

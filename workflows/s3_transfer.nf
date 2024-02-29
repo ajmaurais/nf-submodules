@@ -5,6 +5,9 @@ include { UPLOAD_FILE as UPLOAD_QUANT_ELIB } from "../modules/s3"
 include { UPLOAD_MANY_FILES as UPLOAD_SKYD_FILE } from "../modules/s3"
 include { UPLOAD_FILE as UPLOAD_FINAL_SKYLINE_FILE } from "../modules/s3"
 include { UPLOAD_FILE as UPLOAD_QC_REPORTS } from "../modules/s3"
+include { UPLOAD_FILE as UPLOAD_FILE_CHECKSUMS } from "../modules/s3"
+include { CALCULATE_FILE_STATS } from "../modules/s3"
+include { WRITE_FILE_STATS } from "../modules/s3"
 
 workflow s3_upload {
 
@@ -32,18 +35,53 @@ workflow s3_upload {
 
         // mzml_file_groups = mzml_files.collate(20)
         // UPLOAD_MZML_FILES(params.s3_upload.bucket_name, params.s3_upload.access_key,
-        //                   "${s3_directory}mzML/", mzml_file_groups)
+        //                   "${s3_directory}/mzML/", mzml_file_groups)
 
         // encyclopedia_search_files_groups = encyclopedia_search_files.collate(20)
         // UPLOAD_ENCYCLOPEDIA_SEARCH_FILES(params.s3_upload.bucket_name, params.s3_upload.access_key,
         //                                  "${s3_directory}/encyclopedia/search_file/", encyclopedia_search_files_groups)
 
-        UPLOAD_QUANT_ELIB(params.s3_upload.bucket_name, params.s3_upload.access_key,
-                          "${s3_directory}/encyclopedia/create_elib/", quant_elib)
+        // UPLOAD_QUANT_ELIB(params.s3_upload.bucket_name, params.s3_upload.access_key,
+        //                   "${s3_directory}/encyclopedia/create_elib/", quant_elib)
 
-        UPLOAD_FINAL_SKYLINE_FILE(params.s3_upload.bucket_name, params.s3_upload.access_key,
-                                  "${s3_directory}/skyline/merge_results/", final_skyline_file)
-        
-        UPLOAD_QC_REPORTS(params.s3_upload.bucket_name, params.s3_upload.access_key,
-                          "${s3_directory}/qc_reports", qc_reports)
+        // UPLOAD_FINAL_SKYLINE_FILE(params.s3_upload.bucket_name, params.s3_upload.access_key,
+        //                           "${s3_directory}/skyline/merge_results/", final_skyline_file)
+        // 
+        // UPLOAD_QC_REPORTS(params.s3_upload.bucket_name, params.s3_upload.access_key,
+        //                   "${s3_directory}/qc_reports", qc_reports)
+
+        all_files = mzml_files.concat(
+            encyclopedia_search_files
+        ).concat(
+            quant_elib
+        ).concat(
+            final_skyline_file
+        ).concat(
+            qc_reports
+        ).concat(
+            workflow_versions
+        )
+
+        file_pairs = mzml_files.map{ it -> tuple("${s3_directory}/mzML", it) }.concat(
+            encyclopedia_search_files.map{ it -> tuple("${s3_directory}/encyclopedia/search_file", it) }
+        ).concat(
+            quant_elib.map{ it -> tuple("${s3_directory}/encyclopedia/create_elib", it) }
+        ).concat(
+            final_skyline_file.map{ it -> tuple("${s3_directory}/skyline", it) }
+        ).concat(
+            qc_reports.map{ it -> tuple("${s3_directory}/qc_reports", it) }
+        ).concat(
+            workflow_versions.map{ it -> tuple("${s3_directory}", it) }
+        )
+
+        CALCULATE_FILE_STATS(file_pairs)
+        file_paths = CALCULATE_FILE_STATS.out.map{ it[0] }
+        file_names = CALCULATE_FILE_STATS.out.map{ it[1] }
+        file_hashes = CALCULATE_FILE_STATS.out.map{ it[2] }
+        file_sizes = CALCULATE_FILE_STATS.out.map{ it[3] }
+        WRITE_FILE_STATS(file_paths.collect(), file_names.collect(),
+                         file_hashes.collect(), file_sizes.collect())
+
+        // UPLOAD_FILE_CHECKSUMS(params.s3_upload.bucket_name, params.s3_upload.access_key,
+        //                       "${s3_directory}", WRITE_FILE_STATS.out)
 }
