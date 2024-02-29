@@ -6,6 +6,7 @@ include { UPLOAD_MANY_FILES as UPLOAD_SKYD_FILE } from "../modules/s3"
 include { UPLOAD_FILE as UPLOAD_FINAL_SKYLINE_FILE } from "../modules/s3"
 include { UPLOAD_FILE as UPLOAD_QC_REPORTS } from "../modules/s3"
 include { UPLOAD_FILE as UPLOAD_FILE_CHECKSUMS } from "../modules/s3"
+include { UPLOAD_FILE as UPLOAD_GENE_REPORTS } from "../modules/s3"
 include { CALCULATE_FILE_STATS } from "../modules/s3"
 include { WRITE_FILE_STATS } from "../modules/s3"
 
@@ -29,6 +30,9 @@ workflow s3_upload {
         // workflow versions
         workflow_versions
 
+        // gene and precursor matricies
+        gene_reports
+
     main:
 
         s3_directory = "/${params.s3_upload.prefix_dir == null ? '' : params.s3_upload.prefix_dir + '/'}${params.pdc_study_id}"
@@ -50,17 +54,8 @@ workflow s3_upload {
         // UPLOAD_QC_REPORTS(params.s3_upload.bucket_name, params.s3_upload.access_key,
         //                   "${s3_directory}/qc_reports", qc_reports)
 
-        all_files = mzml_files.concat(
-            encyclopedia_search_files
-        ).concat(
-            quant_elib
-        ).concat(
-            final_skyline_file
-        ).concat(
-            qc_reports
-        ).concat(
-            workflow_versions
-        )
+        // UPLOAD_QC_REPORTS(params.s3_upload.bucket_name, params.s3_upload.access_key,
+        //                   "${s3_directory}/gene_reports", gene_reports)
 
         file_pairs = mzml_files.map{ it -> tuple("${s3_directory}/mzML", it) }.concat(
             encyclopedia_search_files.map{ it -> tuple("${s3_directory}/encyclopedia/search_file", it) }
@@ -72,6 +67,8 @@ workflow s3_upload {
             qc_reports.map{ it -> tuple("${s3_directory}/qc_reports", it) }
         ).concat(
             workflow_versions.map{ it -> tuple("${s3_directory}", it) }
+        ).concat(
+            gene_reports.map{ it -> tuple("${s3_directory}/gene_reports", it) }
         )
 
         CALCULATE_FILE_STATS(file_pairs)

@@ -84,9 +84,13 @@ process SKYLINE_ADD_LIB {
 
 process SKYLINE_IMPORT_MZML {
     // publishDir "${params.result_dir}/skyline/import-spectra", failOnError: true, mode: 'copy', enabled: params.skyline.save_intermediate_output
-    label 'process_medium'
+    // label 'process_medium'
+    memory 30.GB
+    cpus 4
+    time 8.h
     label 'error_retry'
-    container "proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:${params.skyline.docker_version}"
+    container "proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24054-2352758"
+    stageInMode "${workflow.profile == 'aws' ? 'symlink' : 'link'}"
 
     input:
         path skyline_zipfile
@@ -98,6 +102,8 @@ process SKYLINE_IMPORT_MZML {
         path("*.stderr"), emit: stderr
 
     script:
+
+    if( workflow.profile == 'aws' ) 
     """
     unzip ${skyline_zipfile}
 
@@ -110,6 +116,18 @@ process SKYLINE_IMPORT_MZML {
     > >(tee 'import_${mzml_file.baseName}.stdout') 2> >(tee 'import_${mzml_file.baseName}.stderr' >&2)
     """
 
+    else
+    """
+    unzip ${skyline_zipfile}
+
+    wine SkylineCmd \
+        --in="${skyline_zipfile.baseName}" \
+        --import-no-join \
+        --import-file="${mzml_file}" \
+    > >(tee 'import_${mzml_file.baseName}.stdout') 2> >(tee 'import_${mzml_file.baseName}.stderr' >&2)
+    """
+
+
     stub:
     """
     touch "${mzml_file.baseName}.skyd"
@@ -121,7 +139,7 @@ process SKYLINE_MERGE_RESULTS {
     publishDir "${params.result_dir}/skyline/import-spectra", failOnError: true, mode: 'copy', enabled: params.skyline.save_intermediate_output
     cpus 16
     memory { check_max_mem(1.GB * skyd_files.size()) } // Allocate 1 GB of RAM per mzml file
-    time 4.h
+    time 8.h
     label 'error_retry'
     container "proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24054-2352758"
 

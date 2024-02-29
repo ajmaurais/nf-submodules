@@ -92,7 +92,7 @@ process RENDER_QC_REPORT {
 }
 
 process NORMALIZE_DB {
-    publishDir "${params.result_dir}/batch_report/normalize_db", failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/normalize_db", failOnError: true, mode: 'copy'
     label 'process_high_memory'
     container 'mauraisa/dia_qc_report:1.9'
     stageInMode 'copy'
@@ -107,10 +107,35 @@ process NORMALIZE_DB {
 
     script:
         """
-        cp -v ${batch_db} "normalized_${batch_db.baseName}.db3"
-
         normalize_db "${batch_db}" \
             > >(tee "normalize_db.stdout") 2> >(tee "normalize_db.stderr" >&2)
+        """
+
+    stub:
+        """
+        touch "normalized_${batch_db.baseName}.db3"
+        touch stub.stdout stub.stderr
+        """
+}
+
+process EXPORT_GENE_REPORTS {
+    publishDir "${params.result_dir}/gene_reports", failOnError: true, mode: 'copy'
+    label 'process_high_memory'
+    container 'mauraisa/dia_qc_report:1.9'
+
+    input:
+        path batch_db
+
+    output:
+        path("*.tsv"), emit: gene_reports
+        path("*.stdout"), emit: stdout
+        path("*.stderr"), emit: stderr
+
+    script:
+        """
+        make_gene_matrix --protein combined --precursor combined \
+            '${params.gene_level_data}' '${batch_db}'  \
+            > >(tee "export_reports.stdout") 2> >(tee "export_reports.stderr" >&2)
         """
 
     stub:
@@ -220,6 +245,7 @@ process MERGE_REPORTS {
             parse_data --overwriteMode=append \
                 --projectName="${study_names_array[$i]}" \
                 --metadata="${metadata_array[$i]}" \
+                !{params.skyline.group_by_gene ? "--groupBy=gene" : ""} \
                 "${replicate_reports_array[$i]}" \
                 "${precursor_reports_array[$i]}" \
                 > >(tee -a "parse_data.stdout") 2> >(tee -a "parse_data.stderr" >&2)

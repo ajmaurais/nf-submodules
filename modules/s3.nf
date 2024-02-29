@@ -33,6 +33,7 @@ process GET_DOCKER_INFO {
 
 process UPLOAD_FILE {
     container 'quay.io/mauraisa/s3_client:0.9'
+    label 'error_retry'
     publishDir "${params.result_dir}/s3", failOnError: true, mode: 'copy'
     memory { round_bytes(file_to_upload.size()) }
     cpus 2
@@ -66,6 +67,7 @@ process UPLOAD_FILE {
 
 process CALCULATE_FILE_STATS {
     label 'process_low'
+    label 'error_retry'
     memory { round_bytes(file_to_upload.size()) }
     cpus 2
     time '1 h'
@@ -79,13 +81,22 @@ process CALCULATE_FILE_STATS {
 
     shell:
         '''
-        md5_sum=$( md5sum !{file_to_check} |awk '{print $1}' )
-        file_size=$( du !{file_to_check} |awk '{print $1}' )
+        function absPath {
+            if [ -d "$1" ]; then
+                ( cd "$1"; echo $(dirs -l +0))
+            else
+                ( cd "$(dirname "$1")"; d=$(dirs -l +0); echo "${d%/}/${1##*/}" )
+            fi
+        }
+
+        md5_sum=$( md5sum $(absPath !{file_to_check}) |awk '{print $1}' )
+        file_size=$( du $(absPath !{file_to_check}) |awk '{print $1}' )
         '''
 }
 
 process WRITE_FILE_STATS {
     label 'process_low'
+    label 'error_retry'
     container "${workflow.profile == 'aws' ? 'public.ecr.aws/docker/library/python:3.13.0a4' : 'python:3.13.0a4'}"
     publishDir "${params.result_dir}/s3", failOnError: true, mode: 'copy'
     
@@ -105,7 +116,7 @@ process WRITE_FILE_STATS {
         file_paths = [ '${paths.join("', '")}' ]
         file_names = [ '${fnames.join("', '")}' ]
         hashes = [ '${md5_sums.join("', '")}' ]
-        file_sizes = ${file_sizes}
+        file_sizes = [ '${file_sizes.join("', '")}' ]
 
         with open('file_checksums.tsv', 'w') as outF:
             outF.write('s3_path\\tfile\\tsize\\tmd5_sum\\n')
@@ -116,6 +127,7 @@ process WRITE_FILE_STATS {
 
 process UPLOAD_MANY_FILES {
     label 'process_high_memory'
+    label 'error_retry'
     container 'quay.io/mauraisa/s3_client:0.9'
     publishDir "${params.result_dir}/s3", failOnError: true, mode: 'copy'
 

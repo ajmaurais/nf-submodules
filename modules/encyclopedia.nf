@@ -45,7 +45,6 @@ process ENCYCLOPEDIA_SEARCH_FILE {
         path("${mzml_file}.features.txt", emit: features)
         path("${mzml_file}.encyclopedia.txt", emit: results_targets)
         path("${mzml_file}.encyclopedia.decoy.txt", emit: results_decoys)
-        
 
     script:
     """
