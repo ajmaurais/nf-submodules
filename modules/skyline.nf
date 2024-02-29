@@ -239,6 +239,8 @@ process SKYLINE_ANNOTATE_DOCUMENT {
         path("final_annotated.sky.zip"), emit: sky_zip_file
         path("*.stdout"), emit: stdout
         path("*.stderr"), emit: stderr
+        env(sky_zip_hash), emit: file_hash
+        env(sky_zip_size), emit: file_size
 
     shell:
     """
@@ -247,12 +249,17 @@ process SKYLINE_ANNOTATE_DOCUMENT {
         --import-annotations="${annotation_csv}" --save \
         --share-zip="final_annotated.sky.zip" \
     > >(tee 'annotate_doc.stdout') 2> >(tee 'annotate_doc.stderr' >&2)
+
+    sky_zip_hash=\$( md5sum final_annotated.sky.zip |awk '{print \$1}' )
+    sky_zip_size=\$( du -L final_annotated.sky.zip |awk '{print \$1}' )
     """
 
     stub:
     '''
     touch "final_annotated.sky.zip"
     touch stub.stdout stub.stderr
+    sky_zip_hash=\$( md5sum final_annotated.sky.zip |awk '{print \$1}' )
+    sky_zip_size=\$( du -L final_annotated.sky.zip |awk '{print \$1}' )
     '''
 }
 

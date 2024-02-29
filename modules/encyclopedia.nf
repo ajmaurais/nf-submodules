@@ -45,6 +45,7 @@ process ENCYCLOPEDIA_SEARCH_FILE {
         path("${mzml_file}.features.txt", emit: features)
         path("${mzml_file}.encyclopedia.txt", emit: results_targets)
         path("${mzml_file}.encyclopedia.decoy.txt", emit: results_decoys)
+        path("${mzml_file.baseName}.file_hashes.txt", emit: file_hashes)
 
     script:
     """
@@ -56,6 +57,13 @@ process ENCYCLOPEDIA_SEARCH_FILE {
         -percolatorVersion /usr/local/bin/percolator \\
         ${encyclopedia_params} \\
         > >(tee "encyclopedia-${mzml_file.baseName}.stdout") 2> >(tee "encyclopedia-${mzml_file.baseName}.stderr" >&2)
+
+    md5sum "${mzml_file}" \
+        "${mzml_file}.elib" \
+        "${mzml_file.baseName}.dia" \
+        "${mzml_file}.features.txt" \
+        "${mzml_file}.encyclopedia.txt" \
+        "${mzml_file}.encyclopedia.decoy.txt" > "${mzml_file.baseName}.file_hashes.txt"
     """
 
     stub:
@@ -66,6 +74,13 @@ process ENCYCLOPEDIA_SEARCH_FILE {
     touch "${mzml_file}.features.txt"
     touch "${mzml_file}.encyclopedia.txt"
     touch "${mzml_file}.encyclopedia.decoy.txt"
+
+    md5sum "${mzml_file}" \
+        "${mzml_file}.elib" \
+        "${mzml_file.baseName}.dia" \
+        "${mzml_file}.features.txt" \
+        "${mzml_file}.encyclopedia.txt" \
+        "${mzml_file}.encyclopedia.decoy.txt" > file_hashes.txt
     """
 }
 
@@ -91,6 +106,7 @@ process ENCYCLOPEDIA_CREATE_ELIB {
         path("*.stderr"), emit: stderr
         path("*.stdout"), emit: stdout
         path("${outputFilePrefix}-combined-results.elib", emit: elib)
+        env(elib_hash), emit: file_hash
 
     script:
     """
@@ -107,12 +123,16 @@ process ENCYCLOPEDIA_CREATE_ELIB {
         -percolatorVersion /usr/local/bin/percolator \\
         ${encyclopedia_params} \\
         > >(tee "${outputFilePrefix}.stdout") 2> >(tee "${outputFilePrefix}.stderr" >&2)
+
+    elib_hash=\$( md5sum ${outputFilePrefix}-combined-results.elib |awk '{print \$1}' )
     """
 
     stub:
     """
     touch stub.stdout stub.stderr
     touch "${outputFilePrefix}-combined-results.elib"
+
+    elib_hash=\$( md5sum ${outputFilePrefix}-combined-results.elib |awk '{print \$1}' )
     """
 }
 

@@ -69,28 +69,19 @@ process CALCULATE_FILE_STATS {
     label 'process_low'
     label 'error_retry'
     memory { round_bytes(file_to_upload.size()) }
-    cpus 2
+    cpus 1
     time '1 h'
     container "${workflow.profile == 'aws' ? 'public.ecr.aws/docker/library/ubuntu:22.04' : 'ubuntu:22.04'}"
 
     input:
-        tuple val(path), path(file_to_check)
+        path(file_to_check)
 
     output:
-        tuple val(path), val("${file_to_check.name}"), env(md5_sum), env(file_size)
+        tuple val("${file_to_check.name}"), env(md5_sum)
 
     shell:
         '''
-        function absPath {
-            if [ -d "$1" ]; then
-                ( cd "$1"; echo $(dirs -l +0))
-            else
-                ( cd "$(dirname "$1")"; d=$(dirs -l +0); echo "${d%/}/${1##*/}" )
-            fi
-        }
-
-        md5_sum=$( md5sum $(absPath !{file_to_check}) |awk '{print $1}' )
-        file_size=$( du $(absPath !{file_to_check}) |awk '{print $1}' )
+        md5_sum=$( md5sum !{file_to_check} |awk '{print $1}' )
         '''
 }
 

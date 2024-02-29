@@ -14,7 +14,9 @@ workflow encyclopedia_search {
 
     emit:
         elib
+        elib_hash
         search_files
+        search_file_hashes
 
     main:
 
@@ -33,6 +35,8 @@ workflow encyclopedia_search {
             ENCYCLOPEDIA_SEARCH_FILE.out.results_decoys
         )
 
+        search_file_hashes = ENCYCLOPEDIA_SEARCH_FILE.out.file_hashes
+
         // aggregate results into single elib
         ENCYCLOPEDIA_CREATE_ELIB(
             ENCYCLOPEDIA_SEARCH_FILE.out.elib.collect(),
@@ -48,4 +52,5 @@ workflow encyclopedia_search {
         )
 
         elib = ENCYCLOPEDIA_CREATE_ELIB.out.elib
+        elib_hash = ENCYCLOPEDIA_CREATE_ELIB.out.file_hash
 }

@@ -7,7 +7,9 @@ include { UPLOAD_FILE as UPLOAD_FINAL_SKYLINE_FILE } from "../modules/s3"
 include { UPLOAD_FILE as UPLOAD_QC_REPORTS } from "../modules/s3"
 include { UPLOAD_FILE as UPLOAD_FILE_CHECKSUMS } from "../modules/s3"
 include { UPLOAD_FILE as UPLOAD_GENE_REPORTS } from "../modules/s3"
-include { CALCULATE_FILE_STATS } from "../modules/s3"
+include { CALCULATE_FILE_STATS as QC_FILE_STATS } from "../modules/s3"
+include { CALCULATE_FILE_STATS as GENE_REPORT_STATS } from "../modules/s3"
+include { CALCULATE_FILE_STATS as WORKFLOW_VERSIONS_STATS } from "../modules/s3"
 include { WRITE_FILE_STATS } from "../modules/s3"
 
 workflow s3_upload {
@@ -17,12 +19,15 @@ workflow s3_upload {
         mzml_files
 
         encyclopedia_search_files
+        encyclopedia_file_hashes
 
         // ENCYCLOPEDIA_CREATE_ELIB
         quant_elib
+        quant_elib_hash
 
         // Skyline files
         final_skyline_file
+        final_skyline_hash
 
         // Reports
         qc_reports
@@ -57,25 +62,45 @@ workflow s3_upload {
         // UPLOAD_QC_REPORTS(params.s3_upload.bucket_name, params.s3_upload.access_key,
         //                   "${s3_directory}/gene_reports", gene_reports)
 
-        file_pairs = mzml_files.map{ it -> tuple("${s3_directory}/mzML", it) }.concat(
-            encyclopedia_search_files.map{ it -> tuple("${s3_directory}/encyclopedia/search_file", it) }
+        QC_FILE_STATS(qc_reports)
+        GENE_REPORT_STATS(gene_reports)
+        WORKFLOW_VERSIONS_STATS(workflow_versions)
+
+        file_stats = encyclopedia_file_hashes.map{
+            it -> it.readLines()
+        }.flatten().map{
+            it -> elems = it.split(); return tuple(elems[1], elems[0])
+        }.join(
+            encyclopedia_search_files.map{ it -> tuple(it.name, it.size()) }
+        ).map{
+            it -> tuple(it[0], "${s3_directory}/encyclopedia/search_file", it[1], it[2])
+        }.concat(
+            quant_elib.map{
+                it -> tuple(it.name, it.size())
+            }.combine(quant_elib_hash).map{
+                it -> tuple(it[0], "${s3_directory}/encyclopedia/create_elib", it[2], it[1])
+            }.concat(
+                final_skyline_file.map{
+                    it -> tuple(it.name, it.size())
+                }.combine(quant_elib_hash).map{
+                    it -> tuple(it[0], "${s3_directory}/skyline", it[2], it[1])
+                })
         ).concat(
-            quant_elib.map{ it -> tuple("${s3_directory}/encyclopedia/create_elib", it) }
-        ).concat(
-            final_skyline_file.map{ it -> tuple("${s3_directory}/skyline", it) }
-        ).concat(
-            qc_reports.map{ it -> tuple("${s3_directory}/qc_reports", it) }
-        ).concat(
-            workflow_versions.map{ it -> tuple("${s3_directory}", it) }
-        ).concat(
-            gene_reports.map{ it -> tuple("${s3_directory}/gene_reports", it) }
+            qc_reports.map{
+                it -> tuple(it.name, "${s3_directory}/qc_reports", it.size())
+            }.concat(
+                gene_reports.map{it -> tuple(it.name, "${s3_directory}/gene_reports", it.size()) },
+                workflow_versions.map{it -> tuple(it.name, "${s3_directory}", it.size()) }
+            ).join(QC_FILE_STATS.out.concat(GENE_REPORT_STATS.out,
+                                            WORKFLOW_VERSIONS_STATS.out)).map{
+                it -> tuple(it[0], it[1], it[3], it[2])
+            }
         )
 
-        CALCULATE_FILE_STATS(file_pairs)
-        file_paths = CALCULATE_FILE_STATS.out.map{ it[0] }
-        file_names = CALCULATE_FILE_STATS.out.map{ it[1] }
-        file_hashes = CALCULATE_FILE_STATS.out.map{ it[2] }
-        file_sizes = CALCULATE_FILE_STATS.out.map{ it[3] }
+        file_paths = file_stats.map{ it[1] }
+        file_names = file_stats.map{ it[0] }
+        file_hashes = file_stats.map{ it[2] }
+        file_sizes = file_stats.map{ it[3] }
         WRITE_FILE_STATS(file_paths.collect(), file_names.collect(),
                          file_hashes.collect(), file_sizes.collect())
 
