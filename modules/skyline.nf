@@ -13,7 +13,7 @@ def check_max_mem(obj) {
 process GET_VERSION {
     publishDir "${params.result_dir}/skyline", failOnError: true, mode: 'copy'
     label 'process_low'
-    container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:skyline_23_1'
+    container "proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24054-2352758"
 
     output:
         path("pwiz_versions.txt"), emit: info_file
@@ -48,7 +48,7 @@ process SKYLINE_ADD_LIB {
     publishDir "${params.result_dir}/skyline/add-lib", failOnError: true, mode: 'copy', enabled: params.skyline.save_intermediate_output
     label 'process_medium'
     label 'error_retry'
-    container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:skyline_23_1'
+    container "proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:${params.skyline.docker_version}"
 
     input:
         path skyline_template_zipfile
@@ -86,7 +86,7 @@ process SKYLINE_IMPORT_MZML {
     // publishDir "${params.result_dir}/skyline/import-spectra", failOnError: true, mode: 'copy', enabled: params.skyline.save_intermediate_output
     label 'process_medium'
     label 'error_retry'
-    container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:skyline_23_1'
+    container "proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:${params.skyline.docker_version}"
 
     input:
         path skyline_zipfile
@@ -123,31 +123,54 @@ process SKYLINE_MERGE_RESULTS {
     memory { check_max_mem(1.GB * skyd_files.size()) } // Allocate 1 GB of RAM per mzml file
     time 4.h
     label 'error_retry'
-    container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:skyline_23_1'
+    container "proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24054-2352758"
 
     input:
         path skyline_zipfile
         path skyd_files
         path mzml_files
+        path fasta
 
     output:
-        path("final.sky.zip"), emit: final_skyline_zipfile
+        path("*.sky.zip"), emit: final_skyline_zipfile
         path("*.stdout"), emit: stdout
         path("*.stderr"), emit: stderr
 
     script:
-    """
-    unzip ${skyline_zipfile}
+    if( params.skyline.minimize == false )
+        """
+        unzip ${skyline_zipfile}
 
-    wine SkylineCmd \
-        --in="${skyline_zipfile.baseName}" \
-        --import-file="${(mzml_files as List).collect{ "/tmp/" + file(it).name }.join('" --import-file="')}" \
-        --out="final.sky" \
-        --save \
-        --share-zip="final.sky.zip" \
-        --share-type="complete" \
-    > >(tee 'merge_skyline.stdout') 2> >(tee 'merge_skyline.stderr' >&2)
-    """
+        wine SkylineCmd \
+            --in="${skyline_zipfile.baseName}" \
+            --import-fasta="${fasta}" \
+            --import-file="${(mzml_files as List).collect{ "/tmp/" + file(it).name }.join('" --import-file="')}" \
+            ${params.skyline.protein_group_args} \
+            --out="final.sky" \
+            --save \
+            --share-zip="final.sky.zip" \
+            --share-type="complete" \
+        > >(tee 'merge_skyline.stdout') 2> >(tee 'merge_skyline.stderr' >&2)
+        """
+    if( params.skyline.minimize == true )
+        """
+        unzip ${skyline_zipfile}
+
+        wine SkylineCmd \
+            --in="${skyline_zipfile.baseName}" \
+            --import-fasta="${fasta}" \
+            --import-file="${(mzml_files as List).collect{ "/tmp/" + file(it).name }.join('" --import-file="')}" \
+            ${params.skyline.protein_group_args} \
+            --out="final_minimized.sky" \
+            --save \
+            --chromatograms-discard-unused \
+            --chromatograms-limit-noise=1 \
+            --share-zip="final_minimized.sky.zip" \
+            --share-type="minimal" \
+        > >(tee 'merge_skyline.stdout') 2> >(tee 'merge_skyline.stderr' >&2)
+        """
+    else
+        error "Unknown argument for params.skyline.minimize"
 
     stub:
     """
@@ -187,7 +210,7 @@ process SKYLINE_ANNOTATE_DOCUMENT {
     label 'process_medium'
     label 'error_retry'
     stageInMode 'link'
-    container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:skyline_23_1'
+    container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24054-2352758'
 
     input:
         path sky_file
@@ -220,7 +243,7 @@ process SKYLINE_EXPORT_REPORT {
     label 'process_medium'
     label 'error_retry'
     stageInMode 'link'
-    container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:skyline_23_1'
+    container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24054-2352758'
 
     input:
         path sky_file
