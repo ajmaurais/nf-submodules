@@ -59,10 +59,35 @@ process UPLOAD_FILE {
               2> >(tee 's3_upload_file-!{file_to_upload.baseName}.stderr' >&2)
         '''
 
-    stub:
-    """
-    touch stub.stdout stub.stderr
-    """
+    // stub:
+    // """
+    // touch stub.stdout stub.stderr
+    // """
+}
+
+process GZIP_FILE {
+    label 'process_medium'
+    // label 'error_retry'
+    memory { round_bytes(file_to_upload.size()) }
+    cpus 1
+    time '1 h'
+    container "${workflow.profile == 'aws' ? 'public.ecr.aws/docker/library/ubuntu:22.04' : 'ubuntu:22.04'}"
+
+    input:
+        path(unziped_file)
+
+    output:
+        tuple val("${unziped_file.baseName}"), path("${unziped_file.baseName}.mzML.gz"), env(md5_sum)
+
+    shell:
+        '''
+        cp !{unziped_file} /tmp
+        pushd /tmp
+        gzip "!{unziped_file.baseName}.mzML"
+        popd
+        cp -v "/tmp/!{unziped_file.baseName}.mzML.gz" .
+        md5_sum=$( md5sum "!{unziped_file.baseName}.mzML.gz" |awk '{print $1}' )
+        '''
 }
 
 process CALCULATE_FILE_STATS {
@@ -120,7 +145,7 @@ process UPLOAD_MANY_FILES {
     label 'process_high_memory'
     label 'error_retry'
     container 'quay.io/mauraisa/s3_client:0.9'
-    publishDir "${params.result_dir}/s3", failOnError: true, mode: 'copy'
+    // publishDir "${params.result_dir}/s3", failOnError: true, mode: 'copy'
 
     input:
         val bucket_name
