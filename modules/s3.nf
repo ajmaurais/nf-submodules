@@ -90,7 +90,7 @@ process WRITE_FILE_STATS {
     label 'error_retry'
     container "${workflow.profile == 'aws' ? 'public.ecr.aws/docker/library/python:3.13.0a4' : 'python:3.13.0a4'}"
     publishDir "${params.result_dir}/s3", failOnError: true, mode: 'copy'
-    
+
     input:
         val paths
         val fnames
@@ -99,7 +99,7 @@ process WRITE_FILE_STATS {
 
     output:
         path("file_checksums.tsv")
-    
+
     script:
         """
         #!/usr/bin/env python3

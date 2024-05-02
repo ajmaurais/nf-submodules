@@ -80,7 +80,7 @@ process ENCYCLOPEDIA_SEARCH_FILE {
         "${mzml_file.baseName}.dia" \
         "${mzml_file}.features.txt" \
         "${mzml_file}.encyclopedia.txt" \
-        "${mzml_file}.encyclopedia.decoy.txt" > file_hashes.txt
+        "${mzml_file}.encyclopedia.decoy.txt" > "${mzml_file.baseName}.file_hashes.txt"
     """
 }
 
