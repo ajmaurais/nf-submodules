@@ -14,7 +14,7 @@ def format_flags(vars, flag) {
 process GET_DOCKER_INFO {
     publishDir "${params.result_dir}/qc_report", failOnError: true, mode: 'copy'
     label 'process_low'
-    container 'quay.io/mauraisa/dia_qc_report:1.19'
+    container 'quay.io/mauraisa/dia_qc_report:1.20'
 
     output:
         path('dia_qc_report_versions.txt'), emit: info_file
@@ -35,7 +35,7 @@ process GET_DOCKER_INFO {
 process GENERATE_QC_QMD {
     publishDir "${params.result_dir}/qc_report", failOnError: true, mode: 'copy'
     label 'process_low'
-    container 'quay.io/mauraisa/dia_qc_report:1.19'
+    container 'quay.io/mauraisa/dia_qc_report:1.20'
 
     input:
         path qc_report_db
@@ -66,7 +66,7 @@ process RENDER_QC_REPORT {
     publishDir "${params.result_dir}/qc_report", pattern: '*.stdout', failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/qc_report", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'quay.io/mauraisa/dia_qc_report:1.19'
+    container 'quay.io/mauraisa/dia_qc_report:1.20'
 
     input:
         path qmd
@@ -94,7 +94,7 @@ process RENDER_QC_REPORT {
 process NORMALIZE_DB {
     publishDir "${params.result_dir}/normalize_db", failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'quay.io/mauraisa/dia_qc_report:1.19'
+    container 'quay.io/mauraisa/dia_qc_report:1.20'
     stageInMode 'copy'
 
     input:
@@ -107,7 +107,10 @@ process NORMALIZE_DB {
 
     script:
         """
-        normalize_db "${batch_db}" \
+        normalize_db \
+            ${format_flags(params.normalize_db.exclude_replicates, "--excludeRep")} \
+            ${format_flags(params.normalize_db.exclude_projects, "--excludeProject")} \
+            "${batch_db}" \
             > >(tee "normalize_db.stdout") 2> >(tee "normalize_db.stderr" >&2)
         """
 
@@ -121,7 +124,7 @@ process NORMALIZE_DB {
 process EXPORT_GENE_REPORTS {
     publishDir "${params.result_dir}/gene_reports", failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'quay.io/mauraisa/dia_qc_report:1.19'
+    container 'quay.io/mauraisa/dia_qc_report:1.20'
 
     input:
         path batch_db
@@ -146,9 +149,9 @@ process EXPORT_GENE_REPORTS {
 }
 
 process GENERATE_BATCH_RMD {
-    publishDir "${params.result_dir}/batch_report/rmd", failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/batch_report", failOnError: true, mode: 'copy'
     label 'process_low'
-    container 'quay.io/mauraisa/dia_qc_report:1.19'
+    container 'quay.io/mauraisa/dia_qc_report:1.20'
 
     input:
         path normalized_db
@@ -188,7 +191,7 @@ process RENDER_BATCH_RMD {
     publishDir "${params.result_dir}/batch_report/rmd", pattern: '*.stdout', failOnError: true, mode: 'copy'
     publishDir "${params.result_dir}/batch_report/rmd", pattern: '*.stderr', failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'quay.io/mauraisa/dia_qc_report:1.19'
+    container 'quay.io/mauraisa/dia_qc_report:1.20'
 
     input:
         path batch_rmd
@@ -217,9 +220,9 @@ process RENDER_BATCH_RMD {
 
 
 process MERGE_REPORTS {
-    publishDir "${params.result_dir}/batch_report/merge_reports", failOnError: true, mode: 'copy'
+    publishDir "${params.result_dir}/merge_reports", failOnError: true, mode: 'copy'
     label 'process_high_memory'
-    container 'quay.io/mauraisa/dia_qc_report:1.19'
+    container 'quay.io/mauraisa/dia_qc_report:1.20'
 
     input:
         val study_names
