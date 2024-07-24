@@ -10,10 +10,12 @@ def check_max_mem(obj) {
     }
 }
 
+SKYLINE_DOCKER_VERSION = 'skyline_24.1.0.198-6a0775e'
+
 process GET_VERSION {
     publishDir "${params.result_dir}/skyline", failOnError: true, mode: 'copy'
     label 'process_low'
-    container "proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24054-2352758"
+    container "proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:${SKYLINE_DOCKER_VERSION}"
 
     output:
         path("pwiz_versions.txt"), emit: info_file
@@ -48,7 +50,7 @@ process SKYLINE_ADD_LIB {
     publishDir "${params.result_dir}/skyline/add-lib", failOnError: true, mode: 'copy', enabled: params.skyline.save_intermediate_output
     label 'process_medium'
     label 'error_retry'
-    container "proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:${params.skyline.docker_version}"
+    container "proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:${SKYLINE_DOCKER_VERSION}"
 
     input:
         path skyline_template_zipfile
@@ -89,7 +91,7 @@ process SKYLINE_IMPORT_MZML {
     cpus 4
     time 8.h
     label 'error_retry'
-    container "proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24054-2352758"
+    container "proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:${SKYLINE_DOCKER_VERSION}"
     stageInMode "${workflow.profile == 'aws' ? 'symlink' : 'link'}"
 
     input:
@@ -141,7 +143,7 @@ process SKYLINE_MERGE_RESULTS {
     memory { check_max_mem(1.GB * skyd_files.size()) } // Allocate 1 GB of RAM per mzml file
     time 8.h
     label 'error_retry'
-    container "proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24054-2352758"
+    container "proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:${SKYLINE_DOCKER_VERSION}"
 
     input:
         path skyline_zipfile
@@ -228,7 +230,7 @@ process SKYLINE_ANNOTATE_DOCUMENT {
     label 'process_medium'
     label 'error_retry'
     stageInMode 'link'
-    container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24054-2352758'
+    container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:${SKYLINE_DOCKER_VERSION}'
 
     input:
         path sky_file
@@ -261,7 +263,7 @@ process SKYLINE_EXPORT_REPORT {
     label 'process_medium'
     label 'error_retry'
     stageInMode 'link'
-    container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:3.0.24054-2352758'
+    container 'proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:${SKYLINE_DOCKER_VERSION}'
 
     input:
         path sky_file
