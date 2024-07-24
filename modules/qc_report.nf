@@ -11,7 +11,7 @@ def format_flags(vars, flag) {
     return format_flag(vars, flag)
 }
 
-DIA_QC_DOCKER_VERSION = '2.2.0'
+DIA_QC_DOCKER_VERSION = '2.2.1'
 
 process GET_DOCKER_INFO {
     publishDir "${params.result_dir}/qc_report", failOnError: true, mode: 'copy'
@@ -52,7 +52,7 @@ process GENERATE_QC_QMD {
         standard_proteins_args = "--addStdProtein ${(params.qc_report.standard_proteins as List).collect{it}.join(' --addStdProtein ')}"
         color_vars_args = "--addColorVar ${(params.qc_report.color_vars as List).collect{it}.join(' --addColorVar ')}"
         """
-        generate_qc_qmd ${standard_proteins_args} ${color_vars_args} --title '${qc_report_title}' ${qc_report_db} \
+        dia_qc qc_qmd ${standard_proteins_args} ${color_vars_args} --title '${qc_report_title}' ${qc_report_db} \
             > >(tee "make_qmd.stdout") 2> >(tee "make_qmd.stderr" >&2)
         """
 
@@ -109,7 +109,7 @@ process NORMALIZE_DB {
 
     script:
         """
-        normalize_db \
+        dia_qc normalize \
             ${format_flags(params.normalize_db.exclude_replicates, "--excludeRep")} \
             ${format_flags(params.normalize_db.exclude_projects, "--excludeProject")} \
             "${batch_db}" \
@@ -138,7 +138,7 @@ process EXPORT_GENE_REPORTS {
 
     script:
         """
-        make_gene_matrix --protein combined --precursor combined \
+        dia_qc export_gene_matrix --protein combined --precursor combined \
             '${params.gene_level_data}' '${batch_db}'  \
             > >(tee "export_reports.stdout") 2> >(tee "export_reports.stderr" >&2)
         """
@@ -165,7 +165,7 @@ process GENERATE_BATCH_RMD {
 
     script:
         """
-        generate_batch_rmd \
+        dia_qc batch_rmd \
             ${format_flag(params.bc.method, "--bcMethod")} \
             ${format_flag(params.bc.batch1, "--batch1")} \
             ${format_flag(params.bc.batch2, "--batch2")} \
@@ -247,7 +247,7 @@ process MERGE_REPORTS {
         for i in ${!study_names_array[@]} ; do
             echo "Working on ${study_names_array[$i]}..."
 
-            parse_data --overwriteMode=append \
+            dia_qc parse --overwriteMode=append \
                 --projectName="${study_names_array[$i]}" \
                 --metadata="${metadata_array[$i]}" \
                 !{params.skyline.group_by_gene ? "--groupBy=gene" : ""} \
