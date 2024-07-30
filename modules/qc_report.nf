@@ -11,7 +11,7 @@ def format_flags(vars, flag) {
     return format_flag(vars, flag)
 }
 
-DIA_QC_DOCKER_VERSION = '2.2.1'
+DIA_QC_DOCKER_VERSION = '2.2.2'
 
 process GET_DOCKER_INFO {
     publishDir "${params.result_dir}/qc_report", failOnError: true, mode: 'copy'
