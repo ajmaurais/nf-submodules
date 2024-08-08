@@ -110,6 +110,7 @@ process NORMALIZE_DB {
     script:
         """
         dia_qc normalize \
+            ${format_flag(params.normalize_db.method, "--method")} \
             ${format_flags(params.normalize_db.exclude_replicates, "--excludeRep")} \
             ${format_flags(params.normalize_db.exclude_projects, "--excludeProject")} \
             "${batch_db}" \
